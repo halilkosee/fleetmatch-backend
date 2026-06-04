@@ -3,6 +3,7 @@ package com.fleetmatch.load.service;
 import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.entity.CompanyType;
+import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.load.dto.CreateLoadRequest;
 import com.fleetmatch.load.dto.LoadResponse;
 import com.fleetmatch.load.entity.Load;
@@ -42,6 +43,14 @@ public class LoadService {
         if (user.getCompany() == null ||
                 user.getCompany().getType() != CompanyType.BROKER) {
             throw new AccessDeniedException("Only brokers can create loads");
+        }
+
+        if (user.getCompany().getVerificationStatus()
+                != CompanyVerificationStatus.VERIFIED) {
+
+            throw new AccessDeniedException(
+                    "Company must be verified before creating loads"
+            );
         }
 
         Load load = new Load();

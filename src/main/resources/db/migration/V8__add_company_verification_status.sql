@@ -1,0 +1,2 @@
+ALTER TABLE companies
+    ADD COLUMN verification_status VARCHAR(30) NOT NULL DEFAULT 'PENDING';
