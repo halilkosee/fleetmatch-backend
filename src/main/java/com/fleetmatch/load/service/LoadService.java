@@ -1,0 +1,236 @@
+package com.fleetmatch.load.service;
+
+import com.fleetmatch.common.exception.BusinessRuleException;
+import com.fleetmatch.common.exception.ResourceNotFoundException;
+import com.fleetmatch.company.entity.CompanyType;
+import com.fleetmatch.load.dto.CreateLoadRequest;
+import com.fleetmatch.load.dto.LoadResponse;
+import com.fleetmatch.load.entity.Load;
+import com.fleetmatch.load.entity.LoadStatus;
+import com.fleetmatch.load.repository.LoadRepository;
+import com.fleetmatch.offer.entity.Offer;
+import com.fleetmatch.offer.entity.OfferStatus;
+import com.fleetmatch.offer.repository.OfferRepository;
+import com.fleetmatch.security.user.CustomUserDetails;
+import com.fleetmatch.user.entity.PlatformRole;
+import com.fleetmatch.user.entity.User;
+import com.fleetmatch.user.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.UUID;
+
+@Service
+@RequiredArgsConstructor
+public class LoadService {
+
+    private final LoadRepository loadRepository;
+    private final UserRepository userRepository;
+    private final OfferRepository offerRepository;
+
+    public LoadResponse createLoad(
+            CreateLoadRequest request,
+            CustomUserDetails currentUser
+    ) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getCompany() == null ||
+                user.getCompany().getType() != CompanyType.BROKER) {
+            throw new AccessDeniedException("Only brokers can create loads");
+        }
+
+        Load load = new Load();
+        load.setBrokerCompany(user.getCompany());
+        load.setCreatedBy(user);
+
+        load.setPickupCity(request.getPickupCity());
+        load.setPickupState(request.getPickupState());
+        load.setPickupDate(request.getPickupDate());
+
+        load.setDeliveryCity(request.getDeliveryCity());
+        load.setDeliveryState(request.getDeliveryState());
+        load.setDeliveryDate(request.getDeliveryDate());
+
+        load.setEquipmentType(request.getEquipmentType());
+        load.setWeight(request.getWeight());
+        load.setRate(request.getRate());
+        load.setMiles(request.getMiles());
+        load.setCommodity(request.getCommodity());
+        load.setReferenceNumber(request.getReferenceNumber());
+        load.setNotes(request.getNotes());
+
+        Load saved = loadRepository.save(load);
+
+        return toResponse(saved);
+    }
+
+    public Page<LoadResponse> getPostedLoads(Pageable pageable) {
+        return loadRepository.findByStatus(
+                LoadStatus.POSTED,
+                pageable
+        ).map(this::toResponse);
+    }
+
+    public LoadResponse getLoadById(UUID loadId) {
+        Load load = loadRepository.findById(loadId)
+                .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
+
+        return toResponse(load);
+    }
+
+    public List<LoadResponse> searchLoads(
+            String pickupState,
+            String deliveryState,
+            com.fleetmatch.load.entity.EquipmentType equipmentType
+    ) {
+        List<Load> loads;
+
+        if (pickupState != null && deliveryState != null && equipmentType != null) {
+            loads = loadRepository
+                    .findByStatusAndPickupStateIgnoreCaseAndDeliveryStateIgnoreCaseAndEquipmentType(
+                            LoadStatus.POSTED,
+                            pickupState,
+                            deliveryState,
+                            equipmentType
+                    );
+        } else if (pickupState != null) {
+            loads = loadRepository.findByStatusAndPickupStateIgnoreCase(
+                    LoadStatus.POSTED,
+                    pickupState
+            );
+        } else if (deliveryState != null) {
+            loads = loadRepository.findByStatusAndDeliveryStateIgnoreCase(
+                    LoadStatus.POSTED,
+                    deliveryState
+            );
+        } else if (equipmentType != null) {
+            loads = loadRepository.findByStatusAndEquipmentType(
+                    LoadStatus.POSTED,
+                    equipmentType
+            );
+        } else {
+            loads = loadRepository.findByStatus(LoadStatus.POSTED);
+        }
+
+        return loads.stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    public LoadResponse startLoad(UUID loadId, CustomUserDetails currentUser) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Load load = loadRepository.findById(loadId)
+                .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
+
+        if (load.getStatus() != LoadStatus.BOOKED) {
+            throw new BusinessRuleException("Only booked loads can be started");
+        }
+
+        if (user.getPlatformRole() != PlatformRole.ADMIN) {
+            Offer acceptedOffer = offerRepository.findFirstByLoadIdAndStatus(
+                    load.getId(),
+                    OfferStatus.ACCEPTED
+            ).orElseThrow(() -> new ResourceNotFoundException("Accepted offer not found"));
+
+            if (user.getCompany() == null ||
+                    !acceptedOffer.getCarrierUser().getCompany().getId().equals(user.getCompany().getId())) {
+                throw new AccessDeniedException("Only the accepted carrier can start this load");
+            }
+        }
+
+        load.setStatus(LoadStatus.IN_TRANSIT);
+
+        return toResponse(loadRepository.save(load));
+    }
+
+    public LoadResponse deliverLoad(UUID loadId, CustomUserDetails currentUser) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Load load = loadRepository.findById(loadId)
+                .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
+
+        if (load.getStatus() != LoadStatus.IN_TRANSIT) {
+            throw new BusinessRuleException("Only in-transit loads can be delivered");
+        }
+
+        if (user.getPlatformRole() != PlatformRole.ADMIN) {
+            Offer acceptedOffer = offerRepository.findFirstByLoadIdAndStatus(
+                    load.getId(),
+                    OfferStatus.ACCEPTED
+            ).orElseThrow(() -> new ResourceNotFoundException("Accepted offer not found"));
+
+            if (user.getCompany() == null ||
+                    !acceptedOffer.getCarrierUser().getCompany().getId().equals(user.getCompany().getId())) {
+                throw new AccessDeniedException("Only the accepted carrier can deliver this load");
+            }
+        }
+
+        load.setStatus(LoadStatus.DELIVERED);
+
+        return toResponse(loadRepository.save(load));
+    }
+
+    public LoadResponse cancelLoad(UUID loadId, CustomUserDetails currentUser) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Load load = loadRepository.findById(loadId)
+                .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
+
+        if (load.getStatus() == LoadStatus.DELIVERED) {
+            throw new BusinessRuleException("Delivered loads cannot be cancelled");
+        }
+
+        if (load.getStatus() == LoadStatus.CANCELLED) {
+            throw new BusinessRuleException("Load is already cancelled");
+        }
+
+        if (user.getPlatformRole() != PlatformRole.ADMIN) {
+            if (user.getCompany() == null ||
+                    user.getCompany().getType() != CompanyType.BROKER ||
+                    !load.getBrokerCompany().getId().equals(user.getCompany().getId())) {
+                throw new AccessDeniedException("Only the broker owner of this load can cancel it");
+            }
+        }
+
+        load.setStatus(LoadStatus.CANCELLED);
+
+        return toResponse(loadRepository.save(load));
+    }
+
+    private LoadResponse toResponse(Load load) {
+        return new LoadResponse(
+                load.getId(),
+
+                load.getPickupCity(),
+                load.getPickupState(),
+                load.getPickupDate(),
+
+                load.getDeliveryCity(),
+                load.getDeliveryState(),
+                load.getDeliveryDate(),
+
+                load.getEquipmentType(),
+
+                load.getWeight(),
+                load.getRate(),
+                load.getMiles(),
+
+                load.getCommodity(),
+                load.getReferenceNumber(),
+
+                load.getStatus(),
+                load.getNotes(),
+
+                load.getBrokerCompany().getLegalName()
+        );
+    }
+}
