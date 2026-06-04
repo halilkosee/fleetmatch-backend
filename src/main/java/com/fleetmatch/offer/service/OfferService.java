@@ -3,6 +3,7 @@ package com.fleetmatch.offer.service;
 import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.entity.CompanyType;
+import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.load.entity.Load;
 import com.fleetmatch.load.entity.LoadStatus;
 import com.fleetmatch.load.repository.LoadRepository;
@@ -39,6 +40,14 @@ public class OfferService {
 
         if (user.getCompany() == null || user.getCompany().getType() != CompanyType.CARRIER) {
             throw new AccessDeniedException("Only carriers can submit offers");
+        }
+
+        if (user.getCompany().getVerificationStatus()
+                != CompanyVerificationStatus.VERIFIED) {
+
+            throw new AccessDeniedException(
+                    "Company must be verified before submitting offers"
+            );
         }
 
         Load load = loadRepository.findById(loadId)
