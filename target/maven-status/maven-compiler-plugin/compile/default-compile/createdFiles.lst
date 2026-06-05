@@ -37,6 +37,7 @@ com/fleetmatch/security/jwt/JwtAuthenticationFilter.class
 com/fleetmatch/common/exception/ApiError.class
 com/fleetmatch/user/controller/UserController.class
 com/fleetmatch/common/exception/ResourceNotFoundException.class
+com/fleetmatch/company/controller/CompanyController.class
 com/fleetmatch/admin/dto/AdminDashboardResponse$LoadStats.class
 com/fleetmatch/company/dto/UpdateCompanyProfileRequest.class
 com/fleetmatch/auth/controller/AuthController.class

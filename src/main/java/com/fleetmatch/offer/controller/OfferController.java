@@ -4,6 +4,7 @@ import com.fleetmatch.offer.dto.CreateOfferRequest;
 import com.fleetmatch.offer.dto.OfferResponse;
 import com.fleetmatch.offer.service.OfferService;
 import com.fleetmatch.security.user.CustomUserDetails;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -21,7 +22,7 @@ public class OfferController {
     @PostMapping
     public OfferResponse createOffer(
             @PathVariable UUID loadId,
-            @RequestBody CreateOfferRequest request,
+            @Valid @RequestBody CreateOfferRequest request,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         return offerService.createOffer(loadId, request, currentUser);
