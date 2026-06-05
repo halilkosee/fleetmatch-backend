@@ -20,6 +20,7 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/common/exception/GlobalExceptionHandler.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/common/exception/ResourceAlreadyExistsException.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/common/exception/ResourceNotFoundException.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/controller/CompanyController.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/document/controller/CompanyDocumentController.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/document/dto/CompanyDocumentResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/document/dto/CreateCompanyDocumentRequest.java

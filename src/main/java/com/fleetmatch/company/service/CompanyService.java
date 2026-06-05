@@ -1,10 +1,15 @@
 package com.fleetmatch.company.service;
 
 import com.fleetmatch.common.exception.ResourceNotFoundException;
+import com.fleetmatch.company.dto.CompanyProfileResponse;
 import com.fleetmatch.company.dto.PendingCompanyResponse;
+import com.fleetmatch.company.dto.UpdateCompanyProfileRequest;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
+import com.fleetmatch.security.user.CustomUserDetails;
+import com.fleetmatch.user.entity.User;
+import com.fleetmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.fleetmatch.company.dto.CompanyResponse;
@@ -17,6 +22,8 @@ import java.util.UUID;
 public class CompanyService {
 
     private final CompanyRepository companyRepository;
+
+    private final UserRepository userRepository;
 
     public void verifyCompany(UUID companyId) {
 
@@ -82,4 +89,53 @@ public class CompanyService {
         );
     }
 
+    public CompanyProfileResponse getProfile(
+            CustomUserDetails currentUser
+    ) {
+
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Company company = user.getCompany();
+
+        return new CompanyProfileResponse(
+                company.getId(),
+                company.getLegalName(),
+                company.getType(),
+                company.getVerificationStatus(),
+                company.getMcNumber(),
+                company.getDotNumber(),
+                company.getPhone(),
+                company.getWebsite()
+        );
+    }
+
+    public CompanyProfileResponse updateProfile(
+            CustomUserDetails currentUser,
+            UpdateCompanyProfileRequest request
+    ) {
+
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        Company company = user.getCompany();
+
+        company.setMcNumber(request.getMcNumber());
+        company.setDotNumber(request.getDotNumber());
+        company.setPhone(request.getPhone());
+        company.setWebsite(request.getWebsite());
+
+        Company saved = companyRepository.save(company);
+
+        return new CompanyProfileResponse(
+                saved.getId(),
+                saved.getLegalName(),
+                saved.getType(),
+                saved.getVerificationStatus(),
+                saved.getMcNumber(),
+                saved.getDotNumber(),
+                saved.getPhone(),
+                saved.getWebsite()
+        );
+    }
 }

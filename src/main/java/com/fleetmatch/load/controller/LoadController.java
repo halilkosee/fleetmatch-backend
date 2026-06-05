@@ -6,6 +6,7 @@ import com.fleetmatch.load.entity.EquipmentType;
 import com.fleetmatch.load.service.LoadService;
 import com.fleetmatch.security.user.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -23,7 +24,7 @@ public class LoadController {
 
     @PostMapping
     public LoadResponse createLoad(
-            @RequestBody CreateLoadRequest request,
+            @Valid @RequestBody CreateLoadRequest request,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         return loadService.createLoad(request, currentUser);

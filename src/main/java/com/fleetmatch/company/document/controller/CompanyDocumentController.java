@@ -1,6 +1,7 @@
 package com.fleetmatch.company.document.controller;
 
 import com.fleetmatch.security.user.CustomUserDetails;
+import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import com.fleetmatch.company.document.dto.CompanyDocumentResponse;
 import com.fleetmatch.company.document.dto.CreateCompanyDocumentRequest;
@@ -20,7 +21,7 @@ public class CompanyDocumentController {
     @PostMapping("/{companyId}")
     public CompanyDocumentResponse createDocument(
             @PathVariable UUID companyId,
-            @RequestBody CreateCompanyDocumentRequest request,
+            @Valid @RequestBody CreateCompanyDocumentRequest request,
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         return companyDocumentService.createDocument(
