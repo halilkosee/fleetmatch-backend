@@ -2,7 +2,6 @@ package com.fleetmatch.auth.dto;
 
 import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.user.entity.CompanyUserRole;
-import com.fleetmatch.user.entity.PlatformRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -46,9 +45,6 @@ public class RegisterRequest {
     @NotBlank
     @Size(min = 6, max = 100)
     private String password;
-
-    @NotNull
-    private PlatformRole platformRole;
 
     private CompanyUserRole companyUserRole;
 }
