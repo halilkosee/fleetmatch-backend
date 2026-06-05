@@ -32,6 +32,7 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/CompanyResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/PendingCompanyResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/UpdateCompanyProfileRequest.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CarrierType.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/Company.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CompanyType.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CompanyVerificationStatus.java
@@ -66,3 +67,6 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/user/entity/User.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/user/entity/UserStatus.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/user/repository/UserRepository.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/entity/Vehicle.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/entity/VehicleCapability.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/entity/VehicleType.java
