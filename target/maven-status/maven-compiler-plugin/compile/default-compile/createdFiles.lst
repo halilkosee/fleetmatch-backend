@@ -50,13 +50,13 @@ com/fleetmatch/common/exception/GlobalExceptionHandler.class
 com/fleetmatch/company/dto/CompanyResponse.class
 com/fleetmatch/subscription/repository/SubscriptionPlanRepository.class
 com/fleetmatch/company/document/dto/CompanyDocumentResponse.class
+com/fleetmatch/company/dto/UpdateCompanyUserRoleRequest.class
 com/fleetmatch/vehicle/entity/VehicleType.class
 com/fleetmatch/offer/dto/OfferResponse.class
 com/fleetmatch/config/OpenApiConfig.class
 com/fleetmatch/admin/dto/AdminDashboardResponse$CompanyStats.class
 com/fleetmatch/company/document/entity/DocumentType.class
 com/fleetmatch/load/dto/LoadResponse.class
-com/fleetmatch/company/entity/CompanyUserRole.class
 com/fleetmatch/vehicle/dto/VehicleResponse.class
 com/fleetmatch/subscription/service/SubscriptionAccessService.class
 com/fleetmatch/broker/service/BrokerService.class

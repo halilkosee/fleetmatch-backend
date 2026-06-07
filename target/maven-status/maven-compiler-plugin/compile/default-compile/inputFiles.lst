@@ -33,9 +33,9 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/CreateCompanyUserRequest.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/PendingCompanyResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/UpdateCompanyProfileRequest.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/UpdateCompanyUserRoleRequest.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/Company.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CompanyType.java
-/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CompanyUserRole.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CompanyVerificationStatus.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/repository/CompanyRepository.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/service/CompanyService.java
