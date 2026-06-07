@@ -36,4 +36,8 @@ public class LoadResponse {
     private String notes;
 
     private String brokerCompanyName;
+
+    private String brokerEmail;
+
+    private String brokerPhone;
 }

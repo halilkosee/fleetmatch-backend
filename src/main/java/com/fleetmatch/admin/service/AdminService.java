@@ -81,7 +81,7 @@ public class AdminService {
 
         var companies = new AdminDashboardResponse.CompanyStats(
                 companyRepository.countByType(CompanyType.BROKER),
-                companyRepository.countByType(CompanyType.CARRIER)
+                companyRepository.countByType(CompanyType.FLEET)
         );
 
         var loads = new AdminDashboardResponse.LoadStats(

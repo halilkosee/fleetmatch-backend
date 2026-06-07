@@ -31,28 +31,52 @@ public class LoadController {
     }
 
     @GetMapping
-    public Page<LoadResponse> getPostedLoads(Pageable pageable) {
-        return loadService.getPostedLoads(pageable);
+    public Page<LoadResponse> getPostedLoads(
+            Pageable pageable,
+            @AuthenticationPrincipal
+            CustomUserDetails currentUser
+    ) {
+
+        return loadService.getPostedLoads(
+                pageable,
+                currentUser
+        );
     }
 
     @GetMapping("/search")
     public List<LoadResponse> searchLoads(
-            @RequestParam(required = false) String pickupState,
-            @RequestParam(required = false) String deliveryState,
-            @RequestParam(required = false) EquipmentType equipmentType
+            @RequestParam(required = false)
+            String pickupState,
+
+            @RequestParam(required = false)
+            String deliveryState,
+
+            @RequestParam(required = false)
+            EquipmentType equipmentType,
+
+            @AuthenticationPrincipal
+            CustomUserDetails currentUser
     ) {
+
         return loadService.searchLoads(
                 pickupState,
                 deliveryState,
-                equipmentType
+                equipmentType,
+                currentUser
         );
     }
 
     @GetMapping("/{loadId}")
     public LoadResponse getLoadById(
-            @PathVariable UUID loadId
+            @PathVariable UUID loadId,
+            @AuthenticationPrincipal
+            CustomUserDetails currentUser
     ) {
-        return loadService.getLoadById(loadId);
+
+        return loadService.getLoadById(
+                loadId,
+                currentUser
+        );
     }
 
     @PutMapping("/{loadId}/start")

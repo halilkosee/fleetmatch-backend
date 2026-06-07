@@ -32,9 +32,6 @@ public class Company extends BaseEntity {
     @Column(nullable = false)
     private CompanyType type;
 
-    @Enumerated(EnumType.STRING)
-    private CarrierType carrierType;
-
     private Integer fleetSize;
 
     // VERIFICATION
