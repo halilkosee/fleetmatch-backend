@@ -67,6 +67,13 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/user/entity/User.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/user/entity/UserStatus.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/user/repository/UserRepository.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/controller/VehicleController.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/dto/CreateVehicleRequest.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/dto/UpdateVehicleRequest.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/dto/VehicleResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/entity/Vehicle.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/entity/VehicleCapability.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/entity/VehicleStatus.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/entity/VehicleType.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/repository/VehicleRepository.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/vehicle/service/VehicleService.java
