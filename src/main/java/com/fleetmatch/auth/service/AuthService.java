@@ -57,13 +57,11 @@ public class AuthService {
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setPlatformRole(PlatformRole.USER);
-        user.setCompanyUserRole(
-                request.getCompanyUserRole() != null
-                        ? request.getCompanyUserRole()
-                        : CompanyUserRole.OWNER
-        );
         user.setStatus(UserStatus.PENDING_VERIFICATION);
         user.setCompany(company);
+        user.setCompanyUserRole(
+                CompanyUserRole.OWNER
+        );
 
         userRepository.save(user);
     }

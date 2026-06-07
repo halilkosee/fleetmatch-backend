@@ -193,8 +193,8 @@ public class LoadService {
             ).orElseThrow(() -> new ResourceNotFoundException("Accepted offer not found"));
 
             if (user.getCompany() == null ||
-                    !acceptedOffer.getCarrierUser().getCompany().getId().equals(user.getCompany().getId())) {
-                throw new AccessDeniedException("Only the accepted carrier can start this load");
+                    !acceptedOffer.getFleetUser().getCompany().getId().equals(user.getCompany().getId())) {
+                throw new AccessDeniedException("Only the accepted fleet driver can start this load");
             }
         }
 
@@ -224,8 +224,8 @@ public class LoadService {
             ).orElseThrow(() -> new ResourceNotFoundException("Accepted offer not found"));
 
             if (user.getCompany() == null ||
-                    !acceptedOffer.getCarrierUser().getCompany().getId().equals(user.getCompany().getId())) {
-                throw new AccessDeniedException("Only the accepted carrier can deliver this load");
+                    !acceptedOffer.getFleetUser().getCompany().getId().equals(user.getCompany().getId())) {
+                throw new AccessDeniedException("Only the accepted fleet driver can deliver this load");
             }
         }
 

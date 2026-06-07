@@ -1,4 +1,4 @@
-package com.fleetmatch.carrier.service;
+package com.fleetmatch.fleet.service;
 
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.entity.CompanyType;
@@ -21,7 +21,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-public class CarrierService {
+public class FleetService {
 
     private final UserRepository userRepository;
     private final OfferRepository offerRepository;
@@ -36,23 +36,23 @@ public class CarrierService {
 
         if (user.getCompany() == null ||
                 user.getCompany().getType() != CompanyType.FLEET) {
-            throw new AccessDeniedException("Only carriers can access this endpoint");
+            throw new AccessDeniedException("Only fleet companies can access this endpoint");
         }
 
-        return offerRepository.findByCarrierUserCompanyId(
+        return offerRepository.findByFleetUserCompanyId(
                 user.getCompany().getId(),
                 pageable
         ).map(this::toResponse);
     }
 
     private OfferResponse toResponse(Offer offer) {
-        User carrier = offer.getCarrierUser();
+        User fleetUser = offer.getFleetUser();
 
         return new OfferResponse(
                 offer.getId(),
                 offer.getLoad().getId(),
-                carrier.getId(),
-                carrier.getFirstName() + " " + carrier.getLastName(),
+                fleetUser.getId(),
+                fleetUser.getFirstName() + " " + fleetUser.getLastName(),
                 offer.getAmount(),
                 offer.getMessage(),
                 offer.getStatus()
@@ -68,10 +68,10 @@ public class CarrierService {
 
         if (user.getCompany() == null ||
                 user.getCompany().getType() != CompanyType.FLEET) {
-            throw new AccessDeniedException("Only carriers can access this endpoint");
+            throw new AccessDeniedException("Only fleet companies can access this endpoint");
         }
 
-        return offerRepository.findByCarrierUserCompanyIdAndStatus(
+        return offerRepository.findByFleetUserCompanyIdAndStatus(
                         user.getCompany().getId(),
                         OfferStatus.ACCEPTED
                 )

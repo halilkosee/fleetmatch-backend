@@ -1,6 +1,6 @@
-package com.fleetmatch.carrier.controller;
+package com.fleetmatch.fleet.controller;
 
-import com.fleetmatch.carrier.service.CarrierService;
+import com.fleetmatch.fleet.service.FleetService;
 import com.fleetmatch.load.dto.LoadResponse;
 import com.fleetmatch.offer.dto.OfferResponse;
 import com.fleetmatch.security.user.CustomUserDetails;
@@ -14,18 +14,18 @@ import java.util.List;
 
 
 @RestController
-@RequestMapping("/api/carrier")
+@RequestMapping("/api/fleet")
 @RequiredArgsConstructor
-public class CarrierController {
+public class FleetController {
 
-    private final CarrierService carrierService;
+    private final FleetService fleetService;
 
     @GetMapping("/offers")
     public Page<OfferResponse> getMyOffers(
             @AuthenticationPrincipal CustomUserDetails currentUser,
             Pageable pageable
     ) {
-        return carrierService.getMyOffers(
+        return fleetService.getMyOffers(
                 currentUser,
                 pageable
         );
@@ -35,6 +35,6 @@ public class CarrierController {
     public List<LoadResponse> getMyAcceptedLoads(
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        return carrierService.getMyAcceptedLoads(currentUser);
+        return fleetService.getMyAcceptedLoads(currentUser);
     }
 }

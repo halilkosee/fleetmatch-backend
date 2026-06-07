@@ -14,8 +14,8 @@ public class OfferResponse {
     private UUID id;
     private UUID loadId;
 
-    private UUID carrierUserId;
-    private String carrierName;
+    private UUID fleetUserId;
+    private String submittedBy;
 
     private BigDecimal amount;
     private String message;

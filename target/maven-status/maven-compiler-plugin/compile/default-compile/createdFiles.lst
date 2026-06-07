@@ -1,5 +1,7 @@
 com/fleetmatch/user/entity/User.class
 com/fleetmatch/broker/controller/BrokerController.class
+com/fleetmatch/company/dto/CompanyUserResponse$CompanyUserResponseBuilder.class
+com/fleetmatch/company/service/CompanyUserService.class
 com/fleetmatch/company/dto/CompanyProfileResponse.class
 com/fleetmatch/company/document/entity/CompanyDocument.class
 com/fleetmatch/common/entity/BaseEntity.class
@@ -8,7 +10,6 @@ com/fleetmatch/admin/service/AdminService.class
 com/fleetmatch/company/repository/CompanyRepository.class
 com/fleetmatch/vehicle/entity/Vehicle.class
 com/fleetmatch/load/repository/LoadRepository.class
-com/fleetmatch/carrier/controller/CarrierController.class
 com/fleetmatch/vehicle/dto/CreateVehicleRequest.class
 com/fleetmatch/vehicle/entity/VehicleStatus.class
 com/fleetmatch/offer/service/OfferService.class
@@ -17,6 +18,7 @@ com/fleetmatch/load/entity/Load.class
 com/fleetmatch/company/entity/Company.class
 com/fleetmatch/auth/service/AuthService.class
 com/fleetmatch/user/entity/Role.class
+com/fleetmatch/company/dto/CompanyUserResponse.class
 com/fleetmatch/subscription/service/SubscriptionService.class
 com/fleetmatch/user/entity/CompanyUserRole.class
 com/fleetmatch/security/jwt/JwtAuthenticationFilter.class
@@ -39,9 +41,9 @@ com/fleetmatch/offer/entity/OfferStatus.class
 com/fleetmatch/vehicle/entity/VehicleCapability.class
 com/fleetmatch/offer/dto/CreateOfferRequest.class
 com/fleetmatch/auth/dto/LoginRequest.class
+com/fleetmatch/fleet/controller/FleetController.class
 com/fleetmatch/FleetmatchBackendApplication.class
 com/fleetmatch/subscription/dto/UpdateSubscriptionPlanRequest.class
-com/fleetmatch/carrier/service/CarrierService.class
 com/fleetmatch/security/SecurityConfig.class
 com/fleetmatch/subscription/controller/SubscriptionAdminController.class
 com/fleetmatch/common/exception/GlobalExceptionHandler.class
@@ -54,6 +56,7 @@ com/fleetmatch/config/OpenApiConfig.class
 com/fleetmatch/admin/dto/AdminDashboardResponse$CompanyStats.class
 com/fleetmatch/company/document/entity/DocumentType.class
 com/fleetmatch/load/dto/LoadResponse.class
+com/fleetmatch/company/entity/CompanyUserRole.class
 com/fleetmatch/vehicle/dto/VehicleResponse.class
 com/fleetmatch/subscription/service/SubscriptionAccessService.class
 com/fleetmatch/broker/service/BrokerService.class
@@ -72,11 +75,14 @@ com/fleetmatch/load/entity/EquipmentType.class
 com/fleetmatch/security/user/CustomUserDetailsService.class
 com/fleetmatch/offer/controller/OfferController.class
 com/fleetmatch/common/exception/ResourceNotFoundException.class
+com/fleetmatch/fleet/service/FleetService.class
 com/fleetmatch/auth/controller/AuthController.class
 com/fleetmatch/admin/controller/AdminController.class
 com/fleetmatch/company/entity/CompanyType.class
 com/fleetmatch/security/jwt/JwtService.class
+com/fleetmatch/company/dto/CreateCompanyUserRequest.class
 com/fleetmatch/user/entity/UserStatus.class
+com/fleetmatch/company/controller/CompanyUserController.class
 com/fleetmatch/user/entity/PlatformRole.class
 com/fleetmatch/company/document/repository/CompanyDocumentRepository.class
 com/fleetmatch/subscription/dto/AssignSubscriptionRequest.class

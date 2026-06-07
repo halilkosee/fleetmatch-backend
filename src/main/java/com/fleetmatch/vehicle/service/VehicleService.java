@@ -40,7 +40,7 @@ public class VehicleService {
 
         if (company.getType() != CompanyType.FLEET) {
             throw new BusinessRuleException(
-                    "Only carriers can create vehicles"
+                    "Only fleet user can create vehicles"
             );
         }
 

@@ -24,7 +24,7 @@ public class AdminDashboardResponse {
     @AllArgsConstructor
     public static class CompanyStats {
         private long brokers;
-        private long carriers;
+        private long fleets;
     }
 
     @Getter
