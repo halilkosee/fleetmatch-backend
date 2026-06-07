@@ -32,7 +32,6 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/CompanyResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/PendingCompanyResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/UpdateCompanyProfileRequest.java
-/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CarrierType.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/Company.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CompanyType.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CompanyVerificationStatus.java
@@ -60,6 +59,19 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/security/jwt/JwtService.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/security/user/CustomUserDetails.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/security/user/CustomUserDetailsService.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/controller/SubscriptionAdminController.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/dto/AssignSubscriptionRequest.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/dto/CompanySubscriptionResponse.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/dto/CreateSubscriptionPlanRequest.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/dto/SubscriptionPlanResponse.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/dto/UpdateSubscriptionPlanRequest.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/entity/CompanySubscription.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/entity/SubscriptionPlan.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/repository/CompanySubscriptionRepository.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/repository/SubscriptionPlanRepository.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/service/SubscriptionAccessService.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/service/SubscriptionService.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/subscription/service/SubscriptionValidationService.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/user/controller/UserController.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/user/entity/CompanyUserRole.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/user/entity/PlatformRole.java

@@ -35,7 +35,7 @@ public class CarrierService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getCompany() == null ||
-                user.getCompany().getType() != CompanyType.CARRIER) {
+                user.getCompany().getType() != CompanyType.FLEET) {
             throw new AccessDeniedException("Only carriers can access this endpoint");
         }
 
@@ -67,7 +67,7 @@ public class CarrierService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getCompany() == null ||
-                user.getCompany().getType() != CompanyType.CARRIER) {
+                user.getCompany().getType() != CompanyType.FLEET) {
             throw new AccessDeniedException("Only carriers can access this endpoint");
         }
 
@@ -98,7 +98,9 @@ public class CarrierService {
                 load.getReferenceNumber(),
                 load.getStatus(),
                 load.getNotes(),
-                load.getBrokerCompany().getLegalName()
+                load.getBrokerCompany().getLegalName(),
+                null,
+                null
         );
     }
 }

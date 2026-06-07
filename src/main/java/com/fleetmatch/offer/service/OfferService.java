@@ -13,6 +13,7 @@ import com.fleetmatch.offer.entity.Offer;
 import com.fleetmatch.offer.entity.OfferStatus;
 import com.fleetmatch.offer.repository.OfferRepository;
 import com.fleetmatch.security.user.CustomUserDetails;
+import com.fleetmatch.subscription.service.SubscriptionValidationService;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,8 @@ public class OfferService {
     private final OfferRepository offerRepository;
     private final LoadRepository loadRepository;
     private final UserRepository userRepository;
+    private final SubscriptionValidationService
+            subscriptionValidationService;
 
     public OfferResponse createOffer(
             UUID loadId,
@@ -38,8 +41,12 @@ public class OfferService {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        if (user.getCompany() == null || user.getCompany().getType() != CompanyType.CARRIER) {
-            throw new AccessDeniedException("Only carriers can submit offers");
+        if (user.getCompany() == null ||
+                user.getCompany().getType() != CompanyType.FLEET) {
+
+            throw new AccessDeniedException(
+                    "Only fleets can submit offers"
+            );
         }
 
         if (user.getCompany().getVerificationStatus()
@@ -49,6 +56,11 @@ public class OfferService {
                     "Company must be verified before submitting offers"
             );
         }
+
+        subscriptionValidationService
+                .validateCanSubmitOffer(
+                        user.getCompany()
+                );
 
         Load load = loadRepository.findById(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));

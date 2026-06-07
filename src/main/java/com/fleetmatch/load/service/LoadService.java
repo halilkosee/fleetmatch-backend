@@ -6,6 +6,7 @@ import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.load.dto.CreateLoadRequest;
 import com.fleetmatch.load.dto.LoadResponse;
+import com.fleetmatch.load.entity.EquipmentType;
 import com.fleetmatch.load.entity.Load;
 import com.fleetmatch.load.entity.LoadStatus;
 import com.fleetmatch.load.repository.LoadRepository;
@@ -13,6 +14,7 @@ import com.fleetmatch.offer.entity.Offer;
 import com.fleetmatch.offer.entity.OfferStatus;
 import com.fleetmatch.offer.repository.OfferRepository;
 import com.fleetmatch.security.user.CustomUserDetails;
+import com.fleetmatch.subscription.service.SubscriptionAccessService;
 import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.repository.UserRepository;
@@ -32,6 +34,8 @@ public class LoadService {
     private final LoadRepository loadRepository;
     private final UserRepository userRepository;
     private final OfferRepository offerRepository;
+    private final SubscriptionAccessService
+            subscriptionAccessService;
 
     public LoadResponse createLoad(
             CreateLoadRequest request,
@@ -75,28 +79,65 @@ public class LoadService {
 
         Load saved = loadRepository.save(load);
 
-        return toResponse(saved);
+        return toResponse(
+                saved,
+                user
+        );
     }
 
-    public Page<LoadResponse> getPostedLoads(Pageable pageable) {
+    public Page<LoadResponse> getPostedLoads(
+            Pageable pageable,
+            CustomUserDetails currentUser
+    ) {
+
+        User user = userRepository.findById(
+                currentUser.getId()
+        ).orElseThrow(() ->
+                new ResourceNotFoundException(
+                        "User not found"
+                ));
+
         return loadRepository.findByStatus(
                 LoadStatus.POSTED,
                 pageable
-        ).map(this::toResponse);
+        ).map(load -> toResponse(
+                load,
+                user
+        ));
     }
 
-    public LoadResponse getLoadById(UUID loadId) {
+    public LoadResponse getLoadById(
+            UUID loadId,
+            CustomUserDetails currentUser
+    ) {
         Load load = loadRepository.findById(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
+        User user = userRepository.findById(
+                currentUser.getId()
+        ).orElseThrow(() ->
+                new ResourceNotFoundException(
+                        "User not found"
+                ));
 
-        return toResponse(load);
+        return toResponse(
+                load,
+                user
+        );
     }
 
     public List<LoadResponse> searchLoads(
             String pickupState,
             String deliveryState,
-            com.fleetmatch.load.entity.EquipmentType equipmentType
+            EquipmentType equipmentType,
+            CustomUserDetails currentUser
     ) {
+        User user = userRepository.findById(
+                currentUser.getId()
+        ).orElseThrow(() ->
+                new ResourceNotFoundException(
+                        "User not found"
+                ));
+
         List<Load> loads;
 
         if (pickupState != null && deliveryState != null && equipmentType != null) {
@@ -127,7 +168,10 @@ public class LoadService {
         }
 
         return loads.stream()
-                .map(this::toResponse)
+                .map(load -> toResponse(
+                load,
+                user
+        ))
                 .toList();
     }
 
@@ -156,7 +200,10 @@ public class LoadService {
 
         load.setStatus(LoadStatus.IN_TRANSIT);
 
-        return toResponse(loadRepository.save(load));
+        return toResponse(
+                load,
+                user
+        );
     }
 
     public LoadResponse deliverLoad(UUID loadId, CustomUserDetails currentUser) {
@@ -184,7 +231,10 @@ public class LoadService {
 
         load.setStatus(LoadStatus.DELIVERED);
 
-        return toResponse(loadRepository.save(load));
+        return toResponse(
+                load,
+                user
+        );
     }
 
     public LoadResponse cancelLoad(UUID loadId, CustomUserDetails currentUser) {
@@ -212,10 +262,33 @@ public class LoadService {
 
         load.setStatus(LoadStatus.CANCELLED);
 
-        return toResponse(loadRepository.save(load));
+        return toResponse(
+                load,
+                user
+        );
     }
 
-    private LoadResponse toResponse(Load load) {
+    private LoadResponse toResponse(
+            Load load,
+            User viewer
+    ) {
+        String brokerEmail = null;
+        String brokerPhone = null;
+
+        if (viewer != null &&
+                viewer.getCompany() != null &&
+                subscriptionAccessService
+                        .canViewContactInfo(
+                                viewer.getCompany().getId()
+                        )) {
+
+            brokerEmail =
+                    load.getBrokerCompany().getEmail();
+
+            brokerPhone =
+                    load.getBrokerCompany().getPhone();
+        }
+
         return new LoadResponse(
                 load.getId(),
 
@@ -239,7 +312,9 @@ public class LoadService {
                 load.getStatus(),
                 load.getNotes(),
 
-                load.getBrokerCompany().getLegalName()
+                load.getBrokerCompany().getLegalName(),
+                brokerEmail,
+                brokerPhone
         );
     }
 }

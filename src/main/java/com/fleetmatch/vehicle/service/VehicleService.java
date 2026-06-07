@@ -5,6 +5,8 @@ import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.security.user.CustomUserDetails;
+import com.fleetmatch.subscription.service.SubscriptionAccessService;
+import com.fleetmatch.subscription.service.SubscriptionValidationService;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.repository.UserRepository;
 import com.fleetmatch.vehicle.dto.CreateVehicleRequest;
@@ -24,7 +26,9 @@ public class VehicleService {
 
     private final VehicleRepository vehicleRepository;
     private final UserRepository userRepository;
-
+    private final SubscriptionAccessService subscriptionAccessService;
+    private final SubscriptionValidationService
+            subscriptionValidationService;
     public VehicleResponse createVehicle(
             CreateVehicleRequest request,
             CustomUserDetails currentUser
@@ -34,13 +38,14 @@ public class VehicleService {
 
         Company company = user.getCompany();
 
-        if (company.getType() != CompanyType.CARRIER) {
+        if (company.getType() != CompanyType.FLEET) {
             throw new BusinessRuleException(
                     "Only carriers can create vehicles"
             );
         }
 
-        validateVehicleLimit(company);
+        subscriptionValidationService
+                .validateVehicleLimit(company);
 
         if (vehicleRepository.existsByPlateNumber(
                 request.getPlateNumber()
@@ -121,18 +126,6 @@ public class VehicleService {
                 vehicle.getYear(),
                 vehicle.getActive()
         );
-    }
-
-    private void validateVehicleLimit(
-            Company company
-    ) {
-
-        long vehicleCount =
-                vehicleRepository.countByCompanyIdAndActiveTrue(
-                        company.getId()
-                );
-
-        // Subscription module gelince doldurulacak
     }
 
     public VehicleResponse getVehicle(
@@ -221,4 +214,5 @@ public class VehicleService {
 
         vehicleRepository.save(vehicle);
     }
+
 }

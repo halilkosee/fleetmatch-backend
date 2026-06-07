@@ -66,7 +66,9 @@ public class BrokerService {
                 load.getStatus(),
                 load.getNotes(),
 
-                load.getBrokerCompany().getLegalName()
+                load.getBrokerCompany().getLegalName(),
+                null,
+                null
         );
     }
 }
