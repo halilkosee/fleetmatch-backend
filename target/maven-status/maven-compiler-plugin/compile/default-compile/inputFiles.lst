@@ -10,8 +10,6 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/auth/service/AuthService.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/broker/controller/BrokerController.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/broker/service/BrokerService.java
-/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/carrier/controller/CarrierController.java
-/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/carrier/service/CarrierService.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/common/HealthController.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/common/entity/BaseEntity.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/common/exception/AccountNotActiveException.java
@@ -21,6 +19,7 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/common/exception/ResourceAlreadyExistsException.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/common/exception/ResourceNotFoundException.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/controller/CompanyController.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/controller/CompanyUserController.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/document/controller/CompanyDocumentController.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/document/dto/CompanyDocumentResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/document/dto/CreateCompanyDocumentRequest.java
@@ -30,14 +29,20 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/document/service/CompanyDocumentService.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/CompanyProfileResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/CompanyResponse.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/CompanyUserResponse.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/CreateCompanyUserRequest.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/PendingCompanyResponse.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/UpdateCompanyProfileRequest.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/dto/UpdateCompanyUserRoleRequest.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/Company.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CompanyType.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/entity/CompanyVerificationStatus.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/repository/CompanyRepository.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/service/CompanyService.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/company/service/CompanyUserService.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/config/OpenApiConfig.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/fleet/controller/FleetController.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/fleet/service/FleetService.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/load/controller/LoadController.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/load/dto/CreateLoadRequest.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/load/dto/LoadResponse.java

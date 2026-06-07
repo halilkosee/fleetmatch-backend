@@ -20,8 +20,8 @@ public class Offer extends BaseEntity {
     private Load load;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "carrier_user_id", nullable = false)
-    private User carrierUser;
+    @JoinColumn(name = "fleet_user_id", nullable = false)
+    private User fleetUser;
 
     @Column(nullable = false)
     private BigDecimal amount;

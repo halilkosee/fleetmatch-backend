@@ -19,4 +19,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     long countByStatus(UserStatus status);
 
     long countByCompanyId(UUID companyId);
+
+    List<User> findByCompanyId(UUID companyId);
 }

@@ -24,21 +24,21 @@ public interface OfferRepository extends JpaRepository<Offer, UUID> {
             OfferStatus status
     );
 
-    boolean existsByLoadIdAndCarrierUserId(
+    boolean existsByLoadIdAndFleetUserId(
             UUID loadId,
-            UUID carrierUserId
+            UUID FleetUserId
     );
 
     long countByStatus(OfferStatus status);
 
-    List<Offer> findByCarrierUserCompanyId(UUID companyId);
+    List<Offer> findByFleetUserCompanyId(UUID companyId);
 
-    Page<Offer> findByCarrierUserCompanyId(
+    Page<Offer> findByFleetUserCompanyId(
             UUID companyId,
             Pageable pageable
     );
 
-    List<Offer> findByCarrierUserCompanyIdAndStatus(
+    List<Offer> findByFleetUserCompanyIdAndStatus(
             UUID companyId,
             OfferStatus status
     );

@@ -73,7 +73,7 @@ public class OfferService {
             throw new BusinessRuleException("You cannot submit an offer to your own load");
         }
 
-        boolean alreadyOffered = offerRepository.existsByLoadIdAndCarrierUserId(
+        boolean alreadyOffered = offerRepository.existsByLoadIdAndFleetUserId(
                 load.getId(),
                 user.getId()
         );
@@ -84,7 +84,7 @@ public class OfferService {
 
         Offer offer = new Offer();
         offer.setLoad(load);
-        offer.setCarrierUser(user);
+        offer.setFleetUser(user);
         offer.setAmount(request.getAmount());
         offer.setMessage(request.getMessage());
 
@@ -173,13 +173,13 @@ public class OfferService {
     }
 
     private OfferResponse toResponse(Offer offer) {
-        User carrier = offer.getCarrierUser();
+        User fleetUser = offer.getFleetUser();
 
         return new OfferResponse(
                 offer.getId(),
                 offer.getLoad().getId(),
-                carrier.getId(),
-                carrier.getFirstName() + " " + carrier.getLastName(),
+                fleetUser.getId(),
+                fleetUser.getFirstName() + " " + fleetUser.getLastName(),
                 offer.getAmount(),
                 offer.getMessage(),
                 offer.getStatus()
