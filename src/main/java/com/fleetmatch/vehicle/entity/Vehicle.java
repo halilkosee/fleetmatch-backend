@@ -50,6 +50,11 @@ public class Vehicle extends BaseEntity {
 
     private Integer year;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private VehicleStatus status =
+            VehicleStatus.AVAILABLE;
+
     @Column(nullable = false)
     private Boolean active = true;
 }
