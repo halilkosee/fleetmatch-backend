@@ -7,6 +7,7 @@ import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.load.entity.Load;
 import com.fleetmatch.load.entity.LoadStatus;
 import com.fleetmatch.load.repository.LoadRepository;
+import com.fleetmatch.messaging.service.MessagingService;
 import com.fleetmatch.offer.dto.CreateOfferRequest;
 import com.fleetmatch.offer.dto.OfferResponse;
 import com.fleetmatch.offer.entity.Offer;
@@ -19,6 +20,7 @@ import com.fleetmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -32,6 +34,7 @@ public class OfferService {
     private final UserRepository userRepository;
     private final SubscriptionValidationService
             subscriptionValidationService;
+    private final MessagingService messagingService;
 
     public OfferResponse createOffer(
             UUID loadId,
@@ -117,6 +120,7 @@ public class OfferService {
                 .toList();
     }
 
+    @Transactional
     public OfferResponse acceptOffer(
             UUID loadId,
             UUID offerId,
@@ -168,6 +172,8 @@ public class OfferService {
         offerRepository.saveAll(otherOffers);
 
         Offer saved = offerRepository.save(offer);
+
+        messagingService.createConversationForAcceptedOffer(saved);
 
         return toResponse(saved);
     }
