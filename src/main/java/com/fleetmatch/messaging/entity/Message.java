@@ -35,7 +35,13 @@ public class Message extends BaseEntity {
     @Column(nullable = false, length = 2000)
     private String body;
 
+    private LocalDateTime readAt;
+
     private LocalDateTime deletedAt;
+
+    public boolean isRead() {
+        return readAt != null;
+    }
 
     public boolean isDeleted() {
         return deletedAt != null;

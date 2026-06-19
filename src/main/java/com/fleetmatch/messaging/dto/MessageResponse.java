@@ -20,6 +20,9 @@ public class MessageResponse {
     private String senderCompanyName;
 
     private String body;
+    private boolean read;
+    private LocalDateTime readAt;
+
     private boolean deleted;
     private LocalDateTime deletedAt;
 
