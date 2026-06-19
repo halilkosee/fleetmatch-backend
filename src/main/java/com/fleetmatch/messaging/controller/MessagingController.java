@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -92,6 +93,20 @@ public class MessagingController {
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         return messagingService.deleteMessage(
+                conversationId,
+                messageId,
+                currentUser
+        );
+    }
+
+    @PutMapping("/conversations/{conversationId}/messages/{messageId}/read")
+    @Operation(summary = "Mark a message as read")
+    public MessageResponse markMessageAsRead(
+            @PathVariable UUID conversationId,
+            @PathVariable UUID messageId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return messagingService.markMessageAsRead(
                 conversationId,
                 messageId,
                 currentUser
