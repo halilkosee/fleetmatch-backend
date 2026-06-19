@@ -58,7 +58,7 @@ public class MessagingService {
             CustomUserDetails currentUser
     ) {
         User user = getCurrentUser(currentUser);
-        Company company = requireCompanyMember(user);
+        Company company = requireMessagingCompany(user);
 
         return conversationRepository.findByParticipantCompanyId(
                 company.getId(),
@@ -113,17 +113,57 @@ public class MessagingService {
                 user
         );
 
-        if (user.getCompanyUserRole() == CompanyUserRole.DRIVER) {
-            throw new AccessDeniedException(
-                    "Drivers cannot send messages"
-            );
-        }
-
         Message message = new Message();
         message.setConversation(conversation);
         message.setSenderUser(user);
         message.setSenderCompany(user.getCompany());
         message.setBody(request.getBody());
+
+        return toMessageResponse(
+                messageRepository.save(message)
+        );
+    }
+
+    @Transactional
+    public MessageResponse markMessageAsRead(
+            UUID conversationId,
+            UUID messageId,
+            CustomUserDetails currentUser
+    ) {
+        User user = getCurrentUser(currentUser);
+        Conversation conversation = getConversationForParticipant(
+                conversationId,
+                user
+        );
+
+        Message message = messageRepository.findById(messageId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Message not found"
+                ));
+
+        if (!message.getConversation().getId().equals(
+                conversation.getId()
+        )) {
+            throw new AccessDeniedException(
+                    "Message does not belong to this conversation"
+            );
+        }
+
+        if (message.isDeleted()) {
+            throw new BusinessRuleException(
+                    "Deleted messages cannot be marked as read"
+            );
+        }
+
+        if (message.getSenderUser().getId().equals(user.getId())) {
+            throw new BusinessRuleException(
+                    "You cannot mark your own message as read"
+            );
+        }
+
+        if (!message.isRead()) {
+            message.setReadAt(LocalDateTime.now());
+        }
 
         return toMessageResponse(
                 messageRepository.save(message)
@@ -200,10 +240,16 @@ public class MessagingService {
                 ));
     }
 
-    private Company requireCompanyMember(User user) {
+    private Company requireMessagingCompany(User user) {
         if (user.getCompany() == null) {
             throw new AccessDeniedException(
                     "Only company users can access conversations"
+            );
+        }
+
+        if (user.getCompanyUserRole() == CompanyUserRole.DRIVER) {
+            throw new AccessDeniedException(
+                    "Drivers cannot use messaging"
             );
         }
 
@@ -214,7 +260,7 @@ public class MessagingService {
             Conversation conversation,
             User user
     ) {
-        Company company = requireCompanyMember(user);
+        Company company = requireMessagingCompany(user);
 
         boolean participant =
                 conversation.getBrokerCompany().getId().equals(
@@ -258,6 +304,8 @@ public class MessagingService {
                 senderCompany.getId(),
                 senderCompany.getLegalName(),
                 message.isDeleted() ? null : message.getBody(),
+                message.isRead(),
+                message.getReadAt(),
                 message.isDeleted(),
                 message.getDeletedAt(),
                 message.getCreatedAt(),
