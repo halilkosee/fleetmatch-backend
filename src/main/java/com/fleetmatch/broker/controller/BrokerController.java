@@ -67,6 +67,30 @@ public class BrokerController {
         );
     }
 
+    @PatchMapping("/users/{userId}/activate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void activateBrokerUser(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        brokerService.activateBrokerUser(
+                userId,
+                currentUser
+        );
+    }
+
+    @PatchMapping("/users/{userId}/deactivate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deactivateBrokerUser(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        brokerService.deactivateBrokerUser(
+                userId,
+                currentUser
+        );
+    }
+
     @PutMapping("/users/{userId}/role")
     public void updateBrokerUserRole(
             @PathVariable UUID userId,
