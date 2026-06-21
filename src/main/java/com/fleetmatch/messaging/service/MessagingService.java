@@ -40,6 +40,12 @@ public class MessagingService {
                         offer.getLoad().getId()
                 )
                 .map(conversation -> {
+                    conversation.setBrokerCompany(
+                            offer.getLoad().getBrokerCompany()
+                    );
+                    conversation.setFleetCompany(
+                            offer.getFleetUser().getCompany()
+                    );
                     conversation.setArchivedAt(null);
                     return conversation;
                 })
@@ -94,6 +100,7 @@ public class MessagingService {
                 conversation,
                 user
         );
+        requireActiveConversation(conversation);
 
         return toConversationResponse(conversation);
     }
@@ -243,6 +250,7 @@ public class MessagingService {
                 conversation,
                 user
         );
+        requireActiveConversation(conversation);
 
         return conversation;
     }
@@ -287,6 +295,16 @@ public class MessagingService {
         if (!participant) {
             throw new AccessDeniedException(
                     "You can only access conversations for your company"
+            );
+        }
+    }
+
+    private void requireActiveConversation(
+            Conversation conversation
+    ) {
+        if (conversation.isArchived()) {
+            throw new BusinessRuleException(
+                    "Conversation is archived"
             );
         }
     }
