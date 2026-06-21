@@ -194,14 +194,14 @@ public class LoadService {
         }
 
         if (user.getPlatformRole() != PlatformRole.ADMIN) {
-            Offer acceptedOffer = offerRepository.findFirstByLoadIdAndStatus(
+            Offer confirmedOffer = offerRepository.findFirstByLoadIdAndStatus(
                     load.getId(),
-                    OfferStatus.ACCEPTED
-            ).orElseThrow(() -> new ResourceNotFoundException("Accepted offer not found"));
+                    OfferStatus.CONFIRMED
+            ).orElseThrow(() -> new ResourceNotFoundException("Confirmed offer not found"));
 
             if (user.getCompany() == null ||
-                    !acceptedOffer.getFleetUser().getCompany().getId().equals(user.getCompany().getId())) {
-                throw new AccessDeniedException("Only the accepted fleet driver can start this load");
+                    !confirmedOffer.getFleetUser().getCompany().getId().equals(user.getCompany().getId())) {
+                throw new AccessDeniedException("Only the confirmed fleet can start this load");
             }
         }
 
@@ -226,14 +226,14 @@ public class LoadService {
         }
 
         if (user.getPlatformRole() != PlatformRole.ADMIN) {
-            Offer acceptedOffer = offerRepository.findFirstByLoadIdAndStatus(
+            Offer confirmedOffer = offerRepository.findFirstByLoadIdAndStatus(
                     load.getId(),
-                    OfferStatus.ACCEPTED
-            ).orElseThrow(() -> new ResourceNotFoundException("Accepted offer not found"));
+                    OfferStatus.CONFIRMED
+            ).orElseThrow(() -> new ResourceNotFoundException("Confirmed offer not found"));
 
             if (user.getCompany() == null ||
-                    !acceptedOffer.getFleetUser().getCompany().getId().equals(user.getCompany().getId())) {
-                throw new AccessDeniedException("Only the accepted fleet driver can deliver this load");
+                    !confirmedOffer.getFleetUser().getCompany().getId().equals(user.getCompany().getId())) {
+                throw new AccessDeniedException("Only the confirmed fleet can deliver this load");
             }
         }
 
@@ -298,14 +298,17 @@ public class LoadService {
             return;
         }
 
-        Offer acceptedOffer = offerRepository.findFirstByLoadIdAndStatus(
+        Offer participantOffer = offerRepository.findFirstByLoadIdAndStatus(
                 load.getId(),
-                OfferStatus.ACCEPTED
-        ).orElseThrow(() -> new AccessDeniedException(
+                OfferStatus.SELECTED
+        ).or(() -> offerRepository.findFirstByLoadIdAndStatus(
+                load.getId(),
+                OfferStatus.CONFIRMED
+        )).orElseThrow(() -> new AccessDeniedException(
                 "You do not have access to this load"
         ));
 
-        if (!acceptedOffer.getFleetUser().getCompany().getId().equals(
+        if (!participantOffer.getFleetUser().getCompany().getId().equals(
                 user.getCompany().getId()
         )) {
             throw new AccessDeniedException(
