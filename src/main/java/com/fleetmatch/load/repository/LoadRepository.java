@@ -8,6 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -72,6 +73,12 @@ public interface LoadRepository extends JpaRepository<Load, UUID> {
     );
 
     long countByStatus(LoadStatus status);
+
+    long countByBrokerCompanyIdAndCreatedAtBetween(
+            UUID brokerCompanyId,
+            LocalDateTime start,
+            LocalDateTime end
+    );
 
     @EntityGraph(attributePaths = {
             "brokerCompany",
