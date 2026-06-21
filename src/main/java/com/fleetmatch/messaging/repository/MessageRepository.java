@@ -24,7 +24,7 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
             "senderUser",
             "senderCompany"
     })
-    Page<Message> findByConversationIdOrderByCreatedAtAsc(
+    Page<Message> findByConversationIdAndDeletedAtIsNullOrderByCreatedAtAsc(
             UUID conversationId,
             Pageable pageable
     );
