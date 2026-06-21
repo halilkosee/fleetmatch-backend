@@ -19,6 +19,8 @@ public class CreateSubscriptionPlanRequest {
 
     private Integer maxUsers;
 
+    private Integer maxLoadsPerMonth;
+
     private Integer maxLoadsVisible;
 
     private Boolean canSubmitOffers;
