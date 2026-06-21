@@ -57,6 +57,32 @@ public class CompanyUserController {
         );
     }
 
+    @PatchMapping("/{userId}/activate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void activateCompanyUser(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+
+        companyUserService.activateCompanyUser(
+                userId,
+                currentUser
+        );
+    }
+
+    @PatchMapping("/{userId}/deactivate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deactivateCompanyUser(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+
+        companyUserService.deactivateCompanyUser(
+                userId,
+                currentUser
+        );
+    }
+
     @PutMapping("/{userId}/role")
     public void updateCompanyUserRole(
             @PathVariable UUID userId,
