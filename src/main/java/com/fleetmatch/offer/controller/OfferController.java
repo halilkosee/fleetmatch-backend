@@ -44,4 +44,31 @@ public class OfferController {
     ) {
         return offerService.acceptOffer(loadId, offerId, currentUser);
     }
+
+    @PutMapping("/{offerId}/select")
+    public OfferResponse selectOffer(
+            @PathVariable UUID loadId,
+            @PathVariable UUID offerId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return offerService.selectOffer(loadId, offerId, currentUser);
+    }
+
+    @PutMapping("/{offerId}/confirm")
+    public OfferResponse confirmAssignment(
+            @PathVariable UUID loadId,
+            @PathVariable UUID offerId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return offerService.confirmAssignment(loadId, offerId, currentUser);
+    }
+
+    @PutMapping("/{offerId}/decline")
+    public OfferResponse declineAssignment(
+            @PathVariable UUID loadId,
+            @PathVariable UUID offerId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return offerService.declineAssignment(loadId, offerId, currentUser);
+    }
 }
