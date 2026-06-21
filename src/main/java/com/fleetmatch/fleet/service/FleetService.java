@@ -73,7 +73,7 @@ public class FleetService {
 
         return offerRepository.findByFleetUserCompanyIdAndStatus(
                         user.getCompany().getId(),
-                        OfferStatus.ACCEPTED
+                        OfferStatus.CONFIRMED
                 )
                 .stream()
                 .map(Offer::getLoad)
