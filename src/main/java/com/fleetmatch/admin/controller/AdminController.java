@@ -57,8 +57,24 @@ public class AdminController {
         return "Company verified";
     }
 
+    @PatchMapping("/companies/{companyId}/approve")
+    public String approveCompany(
+            @PathVariable UUID companyId
+    ) {
+        companyService.approveCompany(companyId);
+        return "Company approved";
+    }
+
     @PutMapping("/companies/{companyId}/reject")
     public String rejectCompany(
+            @PathVariable UUID companyId
+    ) {
+        companyService.rejectCompany(companyId);
+        return "Company rejected";
+    }
+
+    @PatchMapping("/companies/{companyId}/reject")
+    public String rejectCompanyPatch(
             @PathVariable UUID companyId
     ) {
         companyService.rejectCompany(companyId);
