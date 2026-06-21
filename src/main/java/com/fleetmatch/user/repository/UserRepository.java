@@ -1,6 +1,7 @@
 package com.fleetmatch.user.repository;
 
 import com.fleetmatch.user.entity.User;
+import com.fleetmatch.user.entity.CompanyUserRole;
 import com.fleetmatch.user.entity.UserStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -19,6 +20,17 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     long countByStatus(UserStatus status);
 
     long countByCompanyId(UUID companyId);
+
+    long countByCompanyIdAndStatus(
+            UUID companyId,
+            UserStatus status
+    );
+
+    long countByCompanyIdAndCompanyUserRoleAndStatus(
+            UUID companyId,
+            CompanyUserRole companyUserRole,
+            UserStatus status
+    );
 
     List<User> findByCompanyId(UUID companyId);
 }
