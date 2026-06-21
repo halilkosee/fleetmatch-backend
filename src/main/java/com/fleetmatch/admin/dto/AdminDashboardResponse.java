@@ -31,6 +31,7 @@ public class AdminDashboardResponse {
     @AllArgsConstructor
     public static class LoadStats {
         private long posted;
+        private long awaitingFleetConfirmation;
         private long booked;
         private long inTransit;
         private long delivered;
@@ -41,7 +42,9 @@ public class AdminDashboardResponse {
     @AllArgsConstructor
     public static class OfferStats {
         private long pending;
-        private long accepted;
+        private long selected;
+        private long confirmed;
         private long rejected;
+        private long withdrawn;
     }
 }
