@@ -53,10 +53,10 @@ public class OfferService {
         }
 
         if (user.getCompany().getVerificationStatus()
-                != CompanyVerificationStatus.VERIFIED) {
+                != CompanyVerificationStatus.APPROVED) {
 
             throw new AccessDeniedException(
-                    "Company must be verified before submitting offers"
+                    "Company must be approved before submitting offers"
             );
         }
 
