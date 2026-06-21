@@ -72,6 +72,25 @@ public class SubscriptionAccessService {
                 .getMaxLoadsVisible();
     }
 
+    public Integer getMonthlyLoadLimit(
+            UUID companyId
+    ) {
+
+        CompanySubscription subscription =
+                getActiveSubscription(companyId);
+
+        if (subscription.getMonthlyLoadLimitOverride()
+                != null) {
+
+            return subscription
+                    .getMonthlyLoadLimitOverride();
+        }
+
+        return subscription
+                .getSubscriptionPlan()
+                .getMaxLoadsPerMonth();
+    }
+
     public boolean canSubmitOffers(
             UUID companyId
     ) {
