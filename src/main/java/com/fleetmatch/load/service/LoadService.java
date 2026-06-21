@@ -51,10 +51,10 @@ public class LoadService {
         }
 
         if (user.getCompany().getVerificationStatus()
-                != CompanyVerificationStatus.VERIFIED) {
+                != CompanyVerificationStatus.APPROVED) {
 
             throw new AccessDeniedException(
-                    "Company must be verified before creating loads"
+                    "Company must be approved before creating loads"
             );
         }
 
