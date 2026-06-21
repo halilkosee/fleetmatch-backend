@@ -51,6 +51,15 @@
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/load/entity/LoadStatus.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/load/repository/LoadRepository.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/load/service/LoadService.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/messaging/controller/MessagingController.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/messaging/dto/ConversationResponse.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/messaging/dto/CreateMessageRequest.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/messaging/dto/MessageResponse.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/messaging/entity/Conversation.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/messaging/entity/Message.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/messaging/repository/ConversationRepository.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/messaging/repository/MessageRepository.java
+/Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/messaging/service/MessagingService.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/offer/controller/OfferController.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/offer/dto/CreateOfferRequest.java
 /Users/halil/dev/fleetmatch-backend/src/main/java/com/fleetmatch/offer/dto/OfferResponse.java
