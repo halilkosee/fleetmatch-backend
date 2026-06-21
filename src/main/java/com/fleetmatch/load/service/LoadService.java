@@ -120,6 +120,11 @@ public class LoadService {
                         "User not found"
                 ));
 
+        requireCanViewLoad(
+                load,
+                user
+        );
+
         return toResponse(
                 load,
                 user
@@ -270,6 +275,43 @@ public class LoadService {
                 load,
                 user
         );
+    }
+
+    private void requireCanViewLoad(
+            Load load,
+            User user
+    ) {
+        if (load.getStatus() == LoadStatus.POSTED ||
+                user.getPlatformRole() == PlatformRole.ADMIN) {
+            return;
+        }
+
+        if (user.getCompany() == null) {
+            throw new AccessDeniedException(
+                    "You do not have access to this load"
+            );
+        }
+
+        if (load.getBrokerCompany().getId().equals(
+                user.getCompany().getId()
+        )) {
+            return;
+        }
+
+        Offer acceptedOffer = offerRepository.findFirstByLoadIdAndStatus(
+                load.getId(),
+                OfferStatus.ACCEPTED
+        ).orElseThrow(() -> new AccessDeniedException(
+                "You do not have access to this load"
+        ));
+
+        if (!acceptedOffer.getFleetUser().getCompany().getId().equals(
+                user.getCompany().getId()
+        )) {
+            throw new AccessDeniedException(
+                    "You do not have access to this load"
+            );
+        }
     }
 
     private LoadResponse toResponse(
