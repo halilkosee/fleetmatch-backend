@@ -38,6 +38,7 @@ public class SubscriptionService {
         plan.setMonthlyPrice(request.getMonthlyPrice());
         plan.setMaxVehicles(request.getMaxVehicles());
         plan.setMaxUsers(request.getMaxUsers());
+        plan.setMaxLoadsPerMonth(request.getMaxLoadsPerMonth());
         plan.setMaxLoadsVisible(request.getMaxLoadsVisible());
         plan.setCanSubmitOffers(request.getCanSubmitOffers());
         plan.setCanViewContactInfo(
@@ -67,6 +68,7 @@ public class SubscriptionService {
         plan.setMonthlyPrice(request.getMonthlyPrice());
         plan.setMaxVehicles(request.getMaxVehicles());
         plan.setMaxUsers(request.getMaxUsers());
+        plan.setMaxLoadsPerMonth(request.getMaxLoadsPerMonth());
         plan.setMaxLoadsVisible(request.getMaxLoadsVisible());
         plan.setCanSubmitOffers(
                 request.getCanSubmitOffers()
@@ -115,6 +117,7 @@ public class SubscriptionService {
                 plan.getMonthlyPrice(),
                 plan.getMaxVehicles(),
                 plan.getMaxUsers(),
+                plan.getMaxLoadsPerMonth(),
                 plan.getMaxLoadsVisible(),
                 plan.getCanSubmitOffers(),
                 plan.getCanViewContactInfo(),
@@ -187,6 +190,10 @@ public class SubscriptionService {
                 request.getUserLimitOverride()
         );
 
+        subscription.setMonthlyLoadLimitOverride(
+                request.getMonthlyLoadLimitOverride()
+        );
+
         subscription.setLoadLimitOverride(
                 request.getLoadLimitOverride()
         );
@@ -232,6 +239,8 @@ public class SubscriptionService {
                 subscription.getVehicleLimitOverride(),
 
                 subscription.getUserLimitOverride(),
+
+                subscription.getMonthlyLoadLimitOverride(),
 
                 subscription.getLoadLimitOverride()
         );
