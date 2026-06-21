@@ -35,10 +35,14 @@ public class MessagingService {
     private final UserRepository userRepository;
 
     @Transactional
-    public Conversation createConversationForAcceptedOffer(Offer offer) {
+    public Conversation createConversationForSelectedOffer(Offer offer) {
         return conversationRepository.findByLoadId(
                         offer.getLoad().getId()
                 )
+                .map(conversation -> {
+                    conversation.setArchivedAt(null);
+                    return conversation;
+                })
                 .orElseGet(() -> {
                     Conversation conversation = new Conversation();
                     conversation.setLoad(offer.getLoad());
@@ -50,6 +54,16 @@ public class MessagingService {
                     );
 
                     return conversationRepository.save(conversation);
+                });
+    }
+
+    @Transactional
+    public void archiveConversationForLoad(UUID loadId) {
+        conversationRepository.findByLoadId(loadId)
+                .ifPresent(conversation -> {
+                    if (!conversation.isArchived()) {
+                        conversation.setArchivedAt(LocalDateTime.now());
+                    }
                 });
     }
 
