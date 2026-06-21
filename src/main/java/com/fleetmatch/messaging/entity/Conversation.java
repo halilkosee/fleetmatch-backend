@@ -12,6 +12,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Entity
@@ -29,4 +31,10 @@ public class Conversation extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fleet_company_id", nullable = false)
     private Company fleetCompany;
+
+    private LocalDateTime archivedAt;
+
+    public boolean isArchived() {
+        return archivedAt != null;
+    }
 }
