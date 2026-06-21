@@ -5,6 +5,7 @@ import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.load.repository.LoadRepository;
 import com.fleetmatch.vehicle.repository.VehicleRepository;
 import com.fleetmatch.user.repository.UserRepository;
+import com.fleetmatch.user.entity.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -69,8 +70,9 @@ public class SubscriptionValidationService {
 
         long currentUserCount =
                 userRepository
-                        .countByCompanyId(
-                                company.getId()
+                        .countByCompanyIdAndStatus(
+                                company.getId(),
+                                UserStatus.ACTIVE
                         );
 
         if (currentUserCount >= limit) {
