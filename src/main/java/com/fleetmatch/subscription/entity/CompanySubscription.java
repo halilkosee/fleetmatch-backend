@@ -41,6 +41,8 @@ public class CompanySubscription extends BaseEntity {
 
     private Integer userLimitOverride;
 
+    private Integer monthlyLoadLimitOverride;
+
     private Integer loadLimitOverride;
 
     private Boolean canSubmitOffersOverride;
