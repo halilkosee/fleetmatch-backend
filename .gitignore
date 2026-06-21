@@ -18,6 +18,9 @@ logs/
 # Environment
 .env
 .env.*
+!.env.local
+!.env.dev
+!.env.prod
 
 # Java
 *.class
