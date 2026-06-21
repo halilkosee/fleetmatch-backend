@@ -26,12 +26,16 @@ public class CompanyService {
     private final UserRepository userRepository;
 
     public void verifyCompany(UUID companyId) {
+        approveCompany(companyId);
+    }
+
+    public void approveCompany(UUID companyId) {
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
 
         company.setVerificationStatus(
-                CompanyVerificationStatus.VERIFIED
+                CompanyVerificationStatus.APPROVED
         );
 
         companyRepository.save(company);
@@ -51,8 +55,11 @@ public class CompanyService {
 
     public List<PendingCompanyResponse> getPendingCompanies() {
 
-        return companyRepository.findByVerificationStatus(
-                        CompanyVerificationStatus.PENDING
+        return companyRepository.findByVerificationStatusIn(
+                        List.of(
+                                CompanyVerificationStatus.PENDING,
+                                CompanyVerificationStatus.UNDER_REVIEW
+                        )
                 )
                 .stream()
                 .map(company -> new PendingCompanyResponse(
