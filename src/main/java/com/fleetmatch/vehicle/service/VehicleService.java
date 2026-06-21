@@ -15,6 +15,7 @@ import com.fleetmatch.vehicle.entity.Vehicle;
 import com.fleetmatch.vehicle.repository.VehicleRepository;
 import com.fleetmatch.vehicle.dto.UpdateVehicleRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -36,13 +37,7 @@ public class VehicleService {
 
         User user = getCurrentUser(currentUser);
 
-        Company company = user.getCompany();
-
-        if (company.getType() != CompanyType.FLEET) {
-            throw new BusinessRuleException(
-                    "Only fleet user can create vehicles"
-            );
-        }
+        Company company = requireFleetCompany(user);
 
         subscriptionValidationService
                 .validateVehicleLimit(company);
@@ -55,9 +50,10 @@ public class VehicleService {
             );
         }
 
-        if (vehicleRepository.existsByVinNumber(
-                request.getVinNumber()
-        )) {
+        if (request.getVinNumber() != null &&
+                vehicleRepository.existsByVinNumber(
+                        request.getVinNumber()
+                )) {
             throw new BusinessRuleException(
                     "VIN number already exists"
             );
@@ -87,9 +83,9 @@ public class VehicleService {
 
         User user = getCurrentUser(currentUser);
 
-        Company company = user.getCompany();
+        Company company = requireFleetCompany(user);
 
-        return vehicleRepository.findByCompanyId(
+        return vehicleRepository.findByCompanyIdAndActiveTrue(
                         company.getId()
                 )
                 .stream()
@@ -134,6 +130,7 @@ public class VehicleService {
     ) {
 
         User user = getCurrentUser(currentUser);
+        requireFleetCompany(user);
 
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() ->
@@ -144,8 +141,14 @@ public class VehicleService {
         if (!vehicle.getCompany().getId()
                 .equals(user.getCompany().getId())) {
 
-            throw new BusinessRuleException(
+            throw new AccessDeniedException(
                     "You do not have access to this vehicle"
+            );
+        }
+
+        if (!vehicle.getActive()) {
+            throw new ResourceNotFoundException(
+                    "Vehicle not found"
             );
         }
 
@@ -159,6 +162,7 @@ public class VehicleService {
     ) {
 
         User user = getCurrentUser(currentUser);
+        requireFleetCompany(user);
 
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() ->
@@ -169,8 +173,33 @@ public class VehicleService {
         if (!vehicle.getCompany().getId()
                 .equals(user.getCompany().getId())) {
 
-            throw new BusinessRuleException(
+            throw new AccessDeniedException(
                     "You do not have access to this vehicle"
+            );
+        }
+
+        if (!vehicle.getActive()) {
+            throw new ResourceNotFoundException(
+                    "Vehicle not found"
+            );
+        }
+
+        if (vehicleRepository.existsByPlateNumberAndIdNot(
+                request.getPlateNumber(),
+                vehicle.getId()
+        )) {
+            throw new BusinessRuleException(
+                    "Plate number already exists"
+            );
+        }
+
+        if (request.getVinNumber() != null &&
+                vehicleRepository.existsByVinNumberAndIdNot(
+                        request.getVinNumber(),
+                        vehicle.getId()
+                )) {
+            throw new BusinessRuleException(
+                    "VIN number already exists"
             );
         }
 
@@ -195,6 +224,7 @@ public class VehicleService {
     ) {
 
         User user = getCurrentUser(currentUser);
+        requireFleetCompany(user);
 
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() ->
@@ -205,14 +235,35 @@ public class VehicleService {
         if (!vehicle.getCompany().getId()
                 .equals(user.getCompany().getId())) {
 
-            throw new BusinessRuleException(
+            throw new AccessDeniedException(
                     "You do not have access to this vehicle"
+            );
+        }
+
+        if (!vehicle.getActive()) {
+            throw new ResourceNotFoundException(
+                    "Vehicle not found"
             );
         }
 
         vehicle.setActive(false);
 
         vehicleRepository.save(vehicle);
+    }
+
+    private Company requireFleetCompany(
+            User user
+    ) {
+        Company company = user.getCompany();
+
+        if (company == null ||
+                company.getType() != CompanyType.FLEET) {
+            throw new AccessDeniedException(
+                    "Only fleet users can manage vehicles"
+            );
+        }
+
+        return company;
     }
 
 }
