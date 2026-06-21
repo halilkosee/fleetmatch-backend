@@ -2,6 +2,7 @@ package com.fleetmatch.company.entity;
 
 public enum CompanyVerificationStatus {
     PENDING,
-    VERIFIED,
+    UNDER_REVIEW,
+    APPROVED,
     REJECTED
 }
