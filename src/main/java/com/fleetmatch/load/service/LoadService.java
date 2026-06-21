@@ -15,6 +15,7 @@ import com.fleetmatch.offer.entity.OfferStatus;
 import com.fleetmatch.offer.repository.OfferRepository;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.subscription.service.SubscriptionAccessService;
+import com.fleetmatch.subscription.service.SubscriptionValidationService;
 import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.repository.UserRepository;
@@ -37,6 +38,8 @@ public class LoadService {
     private final OfferRepository offerRepository;
     private final SubscriptionAccessService
             subscriptionAccessService;
+    private final SubscriptionValidationService
+            subscriptionValidationService;
 
     public LoadResponse createLoad(
             CreateLoadRequest request,
@@ -57,6 +60,11 @@ public class LoadService {
                     "Company must be approved before creating loads"
             );
         }
+
+        subscriptionValidationService
+                .validateMonthlyLoadLimit(
+                        user.getCompany()
+                );
 
         Load load = new Load();
         load.setBrokerCompany(user.getCompany());
@@ -98,9 +106,20 @@ public class LoadService {
                         "User not found"
                 ));
 
+        Pageable effectivePageable = pageable;
+
+        if (user.getCompany() != null &&
+                user.getCompany().getType() == CompanyType.FLEET) {
+            effectivePageable = subscriptionValidationService
+                    .applyLoadVisibilityLimit(
+                            user.getCompany(),
+                            pageable
+                    );
+        }
+
         return loadRepository.findByStatus(
                 LoadStatus.POSTED,
-                pageable
+                effectivePageable
         ).map(load -> toResponse(
                 load,
                 user
@@ -173,7 +192,10 @@ public class LoadService {
             loads = loadRepository.findByStatus(LoadStatus.POSTED);
         }
 
-        return loads.stream()
+        return applySearchVisibilityLimit(
+                loads,
+                user
+        ).stream()
                 .map(load -> toResponse(
                 load,
                 user
@@ -365,5 +387,28 @@ public class LoadService {
                 brokerEmail,
                 brokerPhone
         );
+    }
+
+    private List<Load> applySearchVisibilityLimit(
+            List<Load> loads,
+            User user
+    ) {
+        if (user.getCompany() == null ||
+                user.getCompany().getType() != CompanyType.FLEET) {
+            return loads;
+        }
+
+        Integer limit = subscriptionAccessService
+                .getLoadLimit(
+                        user.getCompany().getId()
+                );
+
+        if (limit == null) {
+            return loads;
+        }
+
+        return loads.stream()
+                .limit(limit)
+                .toList();
     }
 }
