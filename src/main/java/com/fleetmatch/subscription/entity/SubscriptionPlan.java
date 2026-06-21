@@ -31,6 +31,9 @@ public class SubscriptionPlan extends BaseEntity {
     private Integer maxUsers;
 
 
+    private Integer maxLoadsPerMonth;
+
+
     private Integer maxLoadsVisible;
 
     @Column(nullable = false)
