@@ -116,7 +116,7 @@ public class MessagingService {
                 user
         );
 
-        return messageRepository.findByConversationIdOrderByCreatedAtAsc(
+        return messageRepository.findByConversationIdAndDeletedAtIsNullOrderByCreatedAtAsc(
                 conversation.getId(),
                 pageable
         ).map(this::toMessageResponse);
