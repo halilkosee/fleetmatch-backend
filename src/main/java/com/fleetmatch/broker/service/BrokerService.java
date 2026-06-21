@@ -79,6 +79,28 @@ public class BrokerService {
         );
     }
 
+    public void activateBrokerUser(
+            UUID userId,
+            CustomUserDetails currentUser
+    ) {
+        requireBrokerUser(currentUser);
+        companyUserService.activateCompanyUser(
+                userId,
+                currentUser
+        );
+    }
+
+    public void deactivateBrokerUser(
+            UUID userId,
+            CustomUserDetails currentUser
+    ) {
+        requireBrokerUser(currentUser);
+        companyUserService.deactivateCompanyUser(
+                userId,
+                currentUser
+        );
+    }
+
     public void updateBrokerUserRole(
             UUID userId,
             UpdateCompanyUserRoleRequest request,
