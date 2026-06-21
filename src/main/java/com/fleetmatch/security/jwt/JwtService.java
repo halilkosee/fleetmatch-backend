@@ -43,10 +43,6 @@ public class JwtService {
             claims.put("companyId", user.getCompany().getId().toString());
         }
 
-        if (user.getCompany() != null) {
-            claims.put("companyId", user.getCompany().getId().toString());
-        }
-
         return Jwts.builder()
                 .claims(claims)
                 .subject(user.getEmail())
