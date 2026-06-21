@@ -1,6 +1,7 @@
 package com.fleetmatch.company.dto;
 
 import com.fleetmatch.user.entity.CompanyUserRole;
+import com.fleetmatch.user.entity.UserStatus;
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,4 +20,6 @@ public class CompanyUserResponse {
     private String email;
 
     private CompanyUserRole companyUserRole;
+
+    private UserStatus status;
 }
