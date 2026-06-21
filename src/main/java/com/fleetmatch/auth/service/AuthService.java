@@ -19,6 +19,7 @@ import com.fleetmatch.security.jwt.JwtService;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.security.user.CustomUserDetailsService;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,7 @@ public class AuthService {
     private final SubscriptionService
             subscriptionService;
 
+    @Transactional
     public void register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
