@@ -6,7 +6,6 @@ import com.fleetmatch.auth.dto.RegisterRequest;
 import com.fleetmatch.auth.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,8 +14,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-
-    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
     public AuthResponse register(
@@ -39,10 +36,5 @@ public class AuthController {
                 request.getEmail(),
                 request.getPassword()
         );
-    }
-
-    @GetMapping("/debug/password")
-    public String debugPassword() {
-        return passwordEncoder.encode("123456");
     }
 }
