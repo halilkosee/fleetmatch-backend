@@ -126,11 +126,20 @@ public class OfferService {
             UUID offerId,
             CustomUserDetails currentUser
     ) {
+        return selectOffer(loadId, offerId, currentUser);
+    }
+
+    @Transactional
+    public OfferResponse selectOffer(
+            UUID loadId,
+            UUID offerId,
+            CustomUserDetails currentUser
+    ) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (user.getCompany() == null || user.getCompany().getType() != CompanyType.BROKER) {
-            throw new AccessDeniedException("Only brokers can accept offers");
+            throw new AccessDeniedException("Only brokers can select offers");
         }
 
         Offer offer = offerRepository.findById(offerId)
@@ -143,37 +152,120 @@ public class OfferService {
         Load load = offer.getLoad();
 
         if (!load.getBrokerCompany().getId().equals(user.getCompany().getId())) {
-            throw new AccessDeniedException("You can only accept offers for your own loads");
+            throw new AccessDeniedException("You can only select offers for your own loads");
         }
 
         if (offer.getStatus() != OfferStatus.PENDING) {
-            throw new BusinessRuleException("Only pending offers can be accepted");
+            throw new BusinessRuleException("Only pending offers can be selected");
         }
 
         if (load.getStatus() != LoadStatus.POSTED) {
             throw new BusinessRuleException("Load is not available");
         }
 
-        offer.setStatus(OfferStatus.ACCEPTED);
+        offer.setStatus(OfferStatus.SELECTED);
+        load.setStatus(LoadStatus.AWAITING_FLEET_CONFIRMATION);
+
+        loadRepository.save(load);
+        Offer saved = offerRepository.save(offer);
+
+        messagingService.createConversationForSelectedOffer(saved);
+
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public OfferResponse confirmAssignment(
+            UUID loadId,
+            UUID offerId,
+            CustomUserDetails currentUser
+    ) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getCompany() == null ||
+                user.getCompany().getType() != CompanyType.FLEET) {
+            throw new AccessDeniedException("Only fleets can confirm assignments");
+        }
+
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
+
+        if (!offer.getLoad().getId().equals(loadId)) {
+            throw new AccessDeniedException("Offer does not belong to this load");
+        }
+
+        if (!offer.getFleetUser().getCompany().getId().equals(
+                user.getCompany().getId()
+        )) {
+            throw new AccessDeniedException("You can only confirm your own fleet assignment");
+        }
+
+        Load load = offer.getLoad();
+
+        if (offer.getStatus() != OfferStatus.SELECTED ||
+                load.getStatus() != LoadStatus.AWAITING_FLEET_CONFIRMATION) {
+            throw new BusinessRuleException("Only selected assignments can be confirmed");
+        }
+
+        offer.setStatus(OfferStatus.CONFIRMED);
         load.setStatus(LoadStatus.BOOKED);
 
-        List<Offer> otherOffers = offerRepository.findByLoadIdAndStatus(
+        List<Offer> pendingOffers = offerRepository.findByLoadIdAndStatus(
                 load.getId(),
                 OfferStatus.PENDING
         );
 
-        for (Offer otherOffer : otherOffers) {
-            if (!otherOffer.getId().equals(offer.getId())) {
-                otherOffer.setStatus(OfferStatus.REJECTED);
-            }
+        for (Offer pendingOffer : pendingOffers) {
+            pendingOffer.setStatus(OfferStatus.REJECTED);
         }
 
         loadRepository.save(load);
-        offerRepository.saveAll(otherOffers);
+        offerRepository.saveAll(pendingOffers);
 
+        return toResponse(offerRepository.save(offer));
+    }
+
+    @Transactional
+    public OfferResponse declineAssignment(
+            UUID loadId,
+            UUID offerId,
+            CustomUserDetails currentUser
+    ) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getCompany() == null ||
+                user.getCompany().getType() != CompanyType.FLEET) {
+            throw new AccessDeniedException("Only fleets can decline assignments");
+        }
+
+        Offer offer = offerRepository.findById(offerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
+
+        if (!offer.getLoad().getId().equals(loadId)) {
+            throw new AccessDeniedException("Offer does not belong to this load");
+        }
+
+        if (!offer.getFleetUser().getCompany().getId().equals(
+                user.getCompany().getId()
+        )) {
+            throw new AccessDeniedException("You can only decline your own fleet assignment");
+        }
+
+        Load load = offer.getLoad();
+
+        if (offer.getStatus() != OfferStatus.SELECTED ||
+                load.getStatus() != LoadStatus.AWAITING_FLEET_CONFIRMATION) {
+            throw new BusinessRuleException("Only selected assignments can be declined");
+        }
+
+        offer.setStatus(OfferStatus.REJECTED);
+        load.setStatus(LoadStatus.POSTED);
+
+        loadRepository.save(load);
         Offer saved = offerRepository.save(offer);
-
-        messagingService.createConversationForAcceptedOffer(saved);
+        messagingService.archiveConversationForLoad(load.getId());
 
         return toResponse(saved);
     }
