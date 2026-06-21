@@ -1,0 +1,26 @@
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/fleetmatch_dev}
+    username: ${SPRING_DATASOURCE_USERNAME:fleetmatch_dev}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  jpa:
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: ${JPA_FORMAT_SQL:false}
+
+fleetmatch:
+  environment: DEV
+  jwt:
+    secret: ${JWT_SECRET}
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,https://dev.easyfleetmatch.com,https://app-dev.easyfleetmatch.com}
+  api:
+    base-url: ${API_BASE_URL:https://api-dev.easyfleetmatch.com}
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:https://dev.easyfleetmatch.com}
