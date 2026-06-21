@@ -4,9 +4,9 @@ spring:
       on-profile: local
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/fleetmatch_local}
-    username: ${SPRING_DATASOURCE_USERNAME:fleetmatch_local}
-    password: ${SPRING_DATASOURCE_PASSWORD:fleetmatch_local}
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:fleetmatch_local}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 
   jpa:
     show-sql: ${JPA_SHOW_SQL:true}
@@ -17,7 +17,7 @@ spring:
 fleetmatch:
   environment: LOCAL
   jwt:
-    secret: ${JWT_SECRET:local-dev-only-change-before-shared-use-8e5a1f7c4b2d9e6f8a3c1b5d7e9f2a4c}
+    secret: ${JWT_SECRET}
   api:
     base-url: ${API_BASE_URL:http://localhost:8080}
   frontend:

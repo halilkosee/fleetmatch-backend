@@ -5,12 +5,12 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: ${DB_NAME:-fleetmatch_prod}
-      POSTGRES_USER: ${SPRING_DATASOURCE_USERNAME:-fleetmatch_prod}
-      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      POSTGRES_USER: ${DB_USERNAME:-fleetmatch_prod}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - fleetmatch_prod_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${SPRING_DATASOURCE_USERNAME:-fleetmatch_prod} -d ${DB_NAME:-fleetmatch_prod}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-fleetmatch_prod} -d ${DB_NAME:-fleetmatch_prod}"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -43,6 +43,12 @@ services:
         condition: service_healthy
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health/readiness"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
 
 volumes:
   fleetmatch_prod_postgres_data:

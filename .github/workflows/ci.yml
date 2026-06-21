@@ -33,9 +33,11 @@ jobs:
 
     env:
       SPRING_PROFILES_ACTIVE: local
-      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/fleetmatch_test
-      SPRING_DATASOURCE_USERNAME: fleetmatch_test
-      SPRING_DATASOURCE_PASSWORD: fleetmatch_test
+      DB_HOST: localhost
+      DB_PORT: 5432
+      DB_NAME: fleetmatch_test
+      DB_USERNAME: fleetmatch_test
+      DB_PASSWORD: fleetmatch_test
       JWT_SECRET: ci-test-jwt-secret-minimum-64-characters-for-easyfleetmatch-backend
 
     steps:

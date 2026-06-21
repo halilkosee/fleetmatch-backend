@@ -21,9 +21,11 @@ SERVER_PORT=8080
 SPRING_PROFILES_ACTIVE=local|dev|prod
 FLEETMATCH_ENVIRONMENT=LOCAL|DEV|PROD
 
-SPRING_DATASOURCE_URL=jdbc:postgresql://host:5432/database
-SPRING_DATASOURCE_USERNAME=username
-SPRING_DATASOURCE_PASSWORD=password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=fleetmatch_local
+DB_USERNAME=fleetmatch_local
+DB_PASSWORD=change-me
 
 JWT_SECRET=minimum-64-character-secret
 JWT_EXPIRATION_MS=86400000
@@ -45,8 +47,9 @@ MAIL_FROM=no-reply@easyfleetmatch.com
 
 ## Environment Files
 
-The repository includes non-secret example files:
+The repository includes environment templates:
 
+- `.env.example`
 - `.env.local`
 - `.env.dev`
 - `.env.prod`

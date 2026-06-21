@@ -6,6 +6,8 @@
 docker build -t easyfleetmatch-backend:local .
 ```
 
+The Docker build context excludes local build output, IDE files, logs, and real environment files.
+
 ## Run DEV Stack
 
 ```bash
@@ -30,6 +32,19 @@ PROD compose keeps PostgreSQL and Redis internal to Docker. Only backend port `8
 https://api.easyfleetmatch.com -> backend:8080
 https://api-dev.easyfleetmatch.com -> backend:8080
 ```
+
+The Docker image and compose files include health checks for backend, PostgreSQL, and Redis.
+
+## Nginx Configs
+
+Production-ready reverse proxy examples are available in:
+
+```text
+deploy/nginx/dev.conf
+deploy/nginx/prod.conf
+```
+
+Validate and reload Nginx after copying the matching file into the server's Nginx sites directory.
 
 ## Stop Stack
 
