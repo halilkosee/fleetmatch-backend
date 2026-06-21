@@ -1,0 +1,24 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/fleetmatch_local}
+    username: ${SPRING_DATASOURCE_USERNAME:fleetmatch_local}
+    password: ${SPRING_DATASOURCE_PASSWORD:fleetmatch_local}
+
+  jpa:
+    show-sql: ${JPA_SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: ${JPA_FORMAT_SQL:true}
+
+fleetmatch:
+  environment: LOCAL
+  jwt:
+    secret: ${JWT_SECRET:local-dev-only-change-before-shared-use-8e5a1f7c4b2d9e6f8a3c1b5d7e9f2a4c}
+  api:
+    base-url: ${API_BASE_URL:http://localhost:8080}
+  frontend:
+    base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
