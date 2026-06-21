@@ -1,13 +1,17 @@
 package com.fleetmatch;
 
+import com.fleetmatch.common.HealthController;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+import static org.assertj.core.api.Assertions.assertThat;
+
 class FleetmatchBackendApplicationTests {
 
     @Test
-    void contextLoads() {
-    }
+    void healthEndpointReturnsRunningMessage() {
+        HealthController controller = new HealthController();
 
+        assertThat(controller.health())
+                .isEqualTo("FleetMatch backend is running");
+    }
 }
