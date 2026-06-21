@@ -5,6 +5,7 @@ import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -19,5 +20,9 @@ public interface CompanyRepository extends JpaRepository<Company, UUID> {
 
     List<Company> findByVerificationStatus(
             CompanyVerificationStatus verificationStatus
+    );
+
+    List<Company> findByVerificationStatusIn(
+            Collection<CompanyVerificationStatus> verificationStatuses
     );
 }
