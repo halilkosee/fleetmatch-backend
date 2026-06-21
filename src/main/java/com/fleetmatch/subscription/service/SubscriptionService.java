@@ -10,6 +10,7 @@ import com.fleetmatch.subscription.repository.CompanySubscriptionRepository;
 import com.fleetmatch.subscription.repository.SubscriptionPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -121,6 +122,7 @@ public class SubscriptionService {
         );
     }
 
+    @Transactional
     public CompanySubscriptionResponse assignPlanToCompany(
             AssignSubscriptionRequest request
     ) {
@@ -235,6 +237,7 @@ public class SubscriptionService {
         );
     }
 
+    @Transactional
     public void assignFreePlan(
             Company company
     ) {
