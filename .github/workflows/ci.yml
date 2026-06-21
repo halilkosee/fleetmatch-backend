@@ -1,0 +1,66 @@
+name: Backend CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+      - test
+  push:
+    branches:
+      - main
+      - develop
+
+jobs:
+  verify:
+    name: Maven verify
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: fleetmatch_test
+          POSTGRES_USER: fleetmatch_test
+          POSTGRES_PASSWORD: fleetmatch_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fleetmatch_test -d fleetmatch_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/fleetmatch_test
+      SPRING_DATASOURCE_USERNAME: fleetmatch_test
+      SPRING_DATASOURCE_PASSWORD: fleetmatch_test
+      JWT_SECRET: ci-test-jwt-secret-minimum-64-characters-for-easyfleetmatch-backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Run Maven verify
+        run: ./mvnw clean verify
+
+  docker-build:
+    name: Docker image build
+    runs-on: ubuntu-latest
+    needs: verify
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t easyfleetmatch-backend:${{ github.sha }} .
