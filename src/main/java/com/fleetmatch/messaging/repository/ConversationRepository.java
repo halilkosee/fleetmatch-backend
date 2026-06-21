@@ -36,8 +36,11 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
     @Query("""
             select c
             from Conversation c
-            where c.brokerCompany.id = :companyId
-               or c.fleetCompany.id = :companyId
+            where c.archivedAt is null
+              and (
+                  c.brokerCompany.id = :companyId
+                  or c.fleetCompany.id = :companyId
+              )
             """)
     Page<Conversation> findByParticipantCompanyId(
             @Param("companyId") UUID companyId,
