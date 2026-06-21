@@ -33,5 +33,7 @@ public class CompanySubscriptionResponse {
 
     private Integer userLimitOverride;
 
+    private Integer monthlyLoadLimitOverride;
+
     private Integer loadLimitOverride;
 }
