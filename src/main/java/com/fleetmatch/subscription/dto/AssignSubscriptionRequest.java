@@ -29,6 +29,8 @@ public class AssignSubscriptionRequest {
 
     private Integer userLimitOverride;
 
+    private Integer monthlyLoadLimitOverride;
+
     private Integer loadLimitOverride;
 
     private Boolean canSubmitOffersOverride;
