@@ -1,7 +1,11 @@
 package com.fleetmatch.broker.service;
 
 import com.fleetmatch.common.exception.ResourceNotFoundException;
+import com.fleetmatch.company.dto.CompanyUserResponse;
+import com.fleetmatch.company.dto.CreateCompanyUserRequest;
+import com.fleetmatch.company.dto.UpdateCompanyUserRoleRequest;
 import com.fleetmatch.company.entity.CompanyType;
+import com.fleetmatch.company.service.CompanyUserService;
 import com.fleetmatch.load.dto.LoadResponse;
 import com.fleetmatch.load.entity.Load;
 import com.fleetmatch.load.repository.LoadRepository;
@@ -15,6 +19,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +27,7 @@ public class BrokerService {
 
     private final UserRepository userRepository;
     private final LoadRepository loadRepository;
+    private final CompanyUserService companyUserService;
 
     public Page<LoadResponse> getMyLoads(
             CustomUserDetails currentUser,
@@ -40,6 +46,62 @@ public class BrokerService {
                 user.getCompany().getId(),
                 pageable
         ).map(this::toResponse);
+    }
+
+    public void createBrokerUser(
+            CreateCompanyUserRequest request,
+            CustomUserDetails currentUser
+    ) {
+        requireBrokerUser(currentUser);
+        companyUserService.createCompanyUser(
+                request,
+                currentUser
+        );
+    }
+
+    public List<CompanyUserResponse> getBrokerUsers(
+            CustomUserDetails currentUser
+    ) {
+        requireBrokerUser(currentUser);
+        return companyUserService.getCompanyUsers(
+                currentUser
+        );
+    }
+
+    public void deleteBrokerUser(
+            UUID userId,
+            CustomUserDetails currentUser
+    ) {
+        requireBrokerUser(currentUser);
+        companyUserService.deleteCompanyUser(
+                userId,
+                currentUser
+        );
+    }
+
+    public void updateBrokerUserRole(
+            UUID userId,
+            UpdateCompanyUserRoleRequest request,
+            CustomUserDetails currentUser
+    ) {
+        requireBrokerUser(currentUser);
+        companyUserService.updateCompanyUserRole(
+                userId,
+                request,
+                currentUser
+        );
+    }
+
+    private void requireBrokerUser(
+            CustomUserDetails currentUser
+    ) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getCompany() == null ||
+                user.getCompany().getType() != CompanyType.BROKER) {
+            throw new AccessDeniedException("Only brokers can access this endpoint");
+        }
     }
 
     private LoadResponse toResponse(Load load) {
