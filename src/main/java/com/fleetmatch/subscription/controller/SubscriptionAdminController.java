@@ -3,6 +3,7 @@ package com.fleetmatch.subscription.controller;
 import com.fleetmatch.subscription.dto.*;
 import com.fleetmatch.subscription.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -11,6 +12,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/admin/subscriptions")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class SubscriptionAdminController {
 
     private final SubscriptionService subscriptionService;
