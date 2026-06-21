@@ -18,4 +18,14 @@ public interface VehicleRepository
     boolean existsByPlateNumber(String plateNumber);
 
     boolean existsByVinNumber(String vinNumber);
+
+    boolean existsByPlateNumberAndIdNot(
+            String plateNumber,
+            UUID id
+    );
+
+    boolean existsByVinNumberAndIdNot(
+            String vinNumber,
+            UUID id
+    );
 }
