@@ -2,6 +2,7 @@ package com.fleetmatch.subscription.service;
 
 import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.company.entity.Company;
+import com.fleetmatch.load.repository.LoadRepository;
 import com.fleetmatch.vehicle.repository.VehicleRepository;
 import com.fleetmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Pageable;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +22,8 @@ public class SubscriptionValidationService {
     private final VehicleRepository vehicleRepository;
 
     private final UserRepository userRepository;
+
+    private final LoadRepository loadRepository;
 
     public void validateVehicleLimit(
             Company company
@@ -87,6 +92,47 @@ public class SubscriptionValidationService {
 
             throw new BusinessRuleException(
                     "Your subscription does not allow submitting offers"
+            );
+        }
+    }
+
+    public void validateMonthlyLoadLimit(
+            Company company
+    ) {
+
+        Integer limit =
+                subscriptionAccessService
+                        .getMonthlyLoadLimit(
+                                company.getId()
+                        );
+
+        if (limit == null) {
+            return;
+        }
+
+        LocalDate firstDayOfMonth =
+                LocalDate.now().withDayOfMonth(1);
+
+        LocalDateTime start =
+                firstDayOfMonth.atStartOfDay();
+
+        LocalDateTime end =
+                firstDayOfMonth
+                        .plusMonths(1)
+                        .atStartOfDay();
+
+        long currentLoadCount =
+                loadRepository
+                        .countByBrokerCompanyIdAndCreatedAtBetween(
+                                company.getId(),
+                                start,
+                                end
+                        );
+
+        if (currentLoadCount >= limit) {
+
+            throw new BusinessRuleException(
+                    "Monthly load limit reached for current subscription"
             );
         }
     }
