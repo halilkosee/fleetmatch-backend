@@ -86,6 +86,7 @@ public class AdminService {
 
         var loads = new AdminDashboardResponse.LoadStats(
                 loadRepository.countByStatus(LoadStatus.POSTED),
+                loadRepository.countByStatus(LoadStatus.AWAITING_FLEET_CONFIRMATION),
                 loadRepository.countByStatus(LoadStatus.BOOKED),
                 loadRepository.countByStatus(LoadStatus.IN_TRANSIT),
                 loadRepository.countByStatus(LoadStatus.DELIVERED),
@@ -94,8 +95,10 @@ public class AdminService {
 
         var offers = new AdminDashboardResponse.OfferStats(
                 offerRepository.countByStatus(OfferStatus.PENDING),
-                offerRepository.countByStatus(OfferStatus.ACCEPTED),
-                offerRepository.countByStatus(OfferStatus.REJECTED)
+                offerRepository.countByStatus(OfferStatus.SELECTED),
+                offerRepository.countByStatus(OfferStatus.CONFIRMED),
+                offerRepository.countByStatus(OfferStatus.REJECTED),
+                offerRepository.countByStatus(OfferStatus.WITHDRAWN)
         );
 
         return new AdminDashboardResponse(
