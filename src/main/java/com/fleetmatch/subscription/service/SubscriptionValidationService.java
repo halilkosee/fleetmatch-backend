@@ -173,7 +173,8 @@ public class SubscriptionValidationService {
                 Math.min(
                         pageable.getPageSize(),
                         limit
-                )
+                ),
+                pageable.getSort()
         );
     }
 }
