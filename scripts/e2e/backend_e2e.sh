@@ -226,6 +226,13 @@ request PUT "/api/companies/me/settings" "$broker_token" "{
   \"description\":\"Broker settings updated by E2E\"
 }" "200" >/dev/null
 
+log "Locked company fields remain unchanged"
+request GET "/api/companies/me" "$broker_token" "" "200" >/dev/null
+company_legal_name="$(json_get '.legalName')"
+company_type="$(json_get '.type')"
+[[ "$company_legal_name" == "E2E Broker Company $RUN_ID" ]] || fail "Expected company legalName to stay locked"
+[[ "$company_type" == "BROKER" ]] || fail "Expected company type to stay locked"
+
 log "Broker creates load"
 request POST "/api/loads" "$broker_token" "{
   \"pickupCity\":\"Chicago\",
@@ -279,6 +286,12 @@ log "Notifications exist after offer selection"
 request GET "/api/notifications/unread-count" "$fleet_token" "" "200" >/dev/null
 fleet_unread="$(json_get '.unreadCount')"
 [[ "$fleet_unread" -ge 1 ]] || fail "Expected fleet unread notifications, got $fleet_unread"
+
+log "Fleet marks notifications as read"
+request POST "/api/notifications/read-all" "$fleet_token" "" "200" >/dev/null
+request GET "/api/notifications/unread-count" "$fleet_token" "" "200" >/dev/null
+fleet_unread_after_read_all="$(json_get '.unreadCount')"
+[[ "$fleet_unread_after_read_all" == "0" ]] || fail "Expected fleet unread notifications to be 0 after read-all"
 
 log "Broker sends message"
 request POST "/api/conversations/$conversation_id/messages" "$broker_token" "{\"body\":\"Broker E2E dispatch message $RUN_ID\"}" "200" >/dev/null
