@@ -294,6 +294,7 @@ expect_fail POST "/api/loads" "$unapproved_broker_token" "{
   \"weightLbs\":12000,
   \"rate\":2400.00,
   \"notes\":\"Should fail\",
+  \"description\":\"Should fail because broker company is not approved\",
   \"pickupDate\":\"2026-07-01\",
   \"deliveryDate\":\"2026-07-03\",
   \"miles\":925,
