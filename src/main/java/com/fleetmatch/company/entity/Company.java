@@ -34,6 +34,9 @@ public class Company extends BaseEntity {
 
     private Integer fleetSize;
 
+    @Column(length = 1000)
+    private String description;
+
     // VERIFICATION
 
     @Enumerated(EnumType.STRING)

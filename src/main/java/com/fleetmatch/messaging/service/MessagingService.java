@@ -10,12 +10,15 @@ import com.fleetmatch.messaging.entity.Conversation;
 import com.fleetmatch.messaging.entity.Message;
 import com.fleetmatch.messaging.repository.ConversationRepository;
 import com.fleetmatch.messaging.repository.MessageRepository;
+import com.fleetmatch.notification.entity.NotificationType;
+import com.fleetmatch.notification.service.NotificationService;
 import com.fleetmatch.offer.entity.Offer;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.user.entity.CompanyUserRole;
 import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.repository.UserRepository;
+import com.fleetmatch.user.service.UserVerificationGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +36,8 @@ public class MessagingService {
     private final ConversationRepository conversationRepository;
     private final MessageRepository messageRepository;
     private final UserRepository userRepository;
+    private final UserVerificationGuard userVerificationGuard;
+    private final NotificationService notificationService;
 
     @Transactional
     public Conversation createConversationForSelectedOffer(Offer offer) {
@@ -40,14 +45,11 @@ public class MessagingService {
                         offer.getLoad().getId()
                 )
                 .map(conversation -> {
-                    conversation.setBrokerCompany(
-                            offer.getLoad().getBrokerCompany()
-                    );
                     conversation.setFleetCompany(
                             offer.getFleetUser().getCompany()
                     );
                     conversation.setArchivedAt(null);
-                    return conversation;
+                    return conversationRepository.save(conversation);
                 })
                 .orElseGet(() -> {
                     Conversation conversation = new Conversation();
@@ -64,12 +66,19 @@ public class MessagingService {
     }
 
     @Transactional
-    public void archiveConversationForLoad(UUID loadId) {
+    public void archiveConversation(UUID loadId) {
         conversationRepository.findByLoadId(loadId)
                 .ifPresent(conversation -> {
-                    if (!conversation.isArchived()) {
-                        conversation.setArchivedAt(LocalDateTime.now());
-                    }
+                    conversation.setArchivedAt(LocalDateTime.now());
+
+                    messageRepository.findByConversationId(conversation.getId())
+                            .stream()
+                            .filter(message -> !message.isDeleted())
+                            .forEach(message -> message.setDeletedAt(
+                                    LocalDateTime.now()
+                            ));
+
+                    conversationRepository.save(conversation);
                 });
     }
 
@@ -83,7 +92,10 @@ public class MessagingService {
         return conversationRepository.findByParticipantCompanyId(
                 company.getId(),
                 pageable
-        ).map(this::toConversationResponse);
+        ).map(conversation -> toConversationResponse(
+                conversation,
+                company.getId()
+        ));
     }
 
     public ConversationResponse getConversationByLoad(
@@ -100,9 +112,11 @@ public class MessagingService {
                 conversation,
                 user
         );
-        requireActiveConversation(conversation);
 
-        return toConversationResponse(conversation);
+        return toConversationResponse(
+                conversation,
+                user.getCompany().getId()
+        );
     }
 
     public Page<MessageResponse> getMessages(
@@ -134,15 +148,38 @@ public class MessagingService {
                 user
         );
 
+        if (conversation.isArchived()) {
+            throw new BusinessRuleException(
+                    "Archived conversations cannot receive messages"
+            );
+        }
+
         Message message = new Message();
         message.setConversation(conversation);
         message.setSenderUser(user);
         message.setSenderCompany(user.getCompany());
         message.setBody(request.getBody());
 
-        return toMessageResponse(
+        MessageResponse response = toMessageResponse(
                 messageRepository.save(message)
         );
+
+        Company recipientCompany = conversation.getBrokerCompany().getId().equals(
+                user.getCompany().getId()
+        )
+                ? conversation.getFleetCompany()
+                : conversation.getBrokerCompany();
+
+        notificationService.createForCompany(
+                recipientCompany,
+                NotificationType.NEW_MESSAGE,
+                "New message",
+                "A new message was sent in a load conversation",
+                "CONVERSATION",
+                conversation.getId()
+        );
+
+        return response;
     }
 
     @Transactional
@@ -250,7 +287,6 @@ public class MessagingService {
                 conversation,
                 user
         );
-        requireActiveConversation(conversation);
 
         return conversation;
     }
@@ -274,6 +310,8 @@ public class MessagingService {
                     "Drivers cannot use messaging"
             );
         }
+
+        userVerificationGuard.requireVerifiedForCoreWorkflow(user);
 
         return user.getCompany();
     }
@@ -299,19 +337,16 @@ public class MessagingService {
         }
     }
 
-    private void requireActiveConversation(
-            Conversation conversation
-    ) {
-        if (conversation.isArchived()) {
-            throw new BusinessRuleException(
-                    "Conversation is archived"
-            );
-        }
-    }
-
     private ConversationResponse toConversationResponse(
-            Conversation conversation
+            Conversation conversation,
+            UUID viewerCompanyId
     ) {
+        Message lastMessage = messageRepository
+                .findTopByConversationIdAndDeletedAtIsNullOrderByCreatedAtDesc(
+                        conversation.getId()
+                )
+                .orElse(null);
+
         return new ConversationResponse(
                 conversation.getId(),
                 conversation.getLoad().getId(),
@@ -320,7 +355,13 @@ public class MessagingService {
                 conversation.getFleetCompany().getId(),
                 conversation.getFleetCompany().getLegalName(),
                 conversation.getCreatedAt(),
-                conversation.getUpdatedAt()
+                conversation.getUpdatedAt(),
+                lastMessage == null ? null : lastMessage.getBody(),
+                lastMessage == null ? null : lastMessage.getCreatedAt(),
+                messageRepository.countUnreadForCompany(
+                        conversation.getId(),
+                        viewerCompanyId
+                )
         );
     }
 

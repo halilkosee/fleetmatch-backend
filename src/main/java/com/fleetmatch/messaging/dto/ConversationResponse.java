@@ -21,4 +21,28 @@ public class ConversationResponse {
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+
+    private String lastMessage;
+    private LocalDateTime lastMessageAt;
+    private long unreadCount;
+
+    public ConversationResponse(
+            UUID id,
+            UUID loadId,
+            UUID brokerCompanyId,
+            String brokerCompanyName,
+            UUID fleetCompanyId,
+            String fleetCompanyName,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {
+        this.id = id;
+        this.loadId = loadId;
+        this.brokerCompanyId = brokerCompanyId;
+        this.brokerCompanyName = brokerCompanyName;
+        this.fleetCompanyId = fleetCompanyId;
+        this.fleetCompanyName = fleetCompanyName;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+    }
 }

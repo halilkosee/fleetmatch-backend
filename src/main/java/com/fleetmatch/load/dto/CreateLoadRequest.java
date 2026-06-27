@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -29,15 +30,19 @@ public class CreateLoadRequest {
     @NotNull
     private EquipmentType equipmentType;
 
-    @NotNull
     @Positive
     private Integer weight;
+
+    @Positive
+    private Integer weightLbs;
 
     @NotNull
     @Positive
     private BigDecimal rate;
 
     private String notes;
+
+    private String description;
 
     @NotNull
     private LocalDate pickupDate;
@@ -54,4 +59,42 @@ public class CreateLoadRequest {
 
     @NotBlank
     private String referenceNumber;
+
+    private String pickupStreetAddress;
+    private String pickupZipCode;
+    private String pickupLocationName;
+    private String pickupContactName;
+    private String pickupContactPhone;
+    private LocalTime pickupTimeWindowStart;
+    private LocalTime pickupTimeWindowEnd;
+    private String pickupInstructions;
+
+    private String deliveryStreetAddress;
+    private String deliveryZipCode;
+    private String deliveryLocationName;
+    private String deliveryContactName;
+    private String deliveryContactPhone;
+    private LocalTime deliveryTimeWindowStart;
+    private LocalTime deliveryTimeWindowEnd;
+    private String deliveryInstructions;
+
+    @Positive
+    private Integer palletCount;
+
+    @Positive
+    private Integer pieceCount;
+
+    @Positive
+    private Integer lengthInches;
+
+    @Positive
+    private Integer widthInches;
+
+    @Positive
+    private Integer heightInches;
+
+    private boolean liftgateRequired;
+    private boolean palletJackRequired;
+    private boolean dockHighRequired;
+    private boolean residentialDelivery;
 }

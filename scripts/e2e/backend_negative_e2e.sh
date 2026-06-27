@@ -5,7 +5,7 @@ BASE_URL="${BASE_URL:-http://localhost:8080}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 RUN_ID="${RUN_ID:-$(date +%s)}"
-PASSWORD="${E2E_PASSWORD:-123456}"
+PASSWORD="${E2E_PASSWORD:-E2eTest!123}"
 
 if [[ -z "$ADMIN_EMAIL" || -z "$ADMIN_PASSWORD" ]]; then
   echo "ADMIN_EMAIL and ADMIN_PASSWORD are required."
@@ -98,6 +98,9 @@ register_company_user() {
   local company_name="$3"
   local email="${prefix}.${RUN_ID}@easyfleetmatch.test"
   local company_email="${prefix}.company.${RUN_ID}@easyfleetmatch.test"
+  local phone_suffix
+  phone_suffix="$(printf '%s' "$prefix" | cksum | awk '{print ($1 % 900) + 100}')"
+  local phone="555-${RUN_ID: -3}-$phone_suffix"
 
   log "Register $type user: $email"
   request POST "/api/auth/register" "" "{
@@ -109,11 +112,35 @@ register_company_user() {
     \"firstName\":\"E2E\",
     \"lastName\":\"$prefix\",
     \"email\":\"$email\",
-    \"phone\":\"555-200-$RUN_ID\",
+    \"phone\":\"$phone\",
     \"password\":\"$PASSWORD\"
   }" "200" >/dev/null
 
-  echo "$email"
+  echo "$email|$phone"
+}
+
+verify_email() {
+  local email="$1"
+
+  request POST "/api/auth/resend-email-code" "" "{\"email\":\"$email\"}" "200" >/dev/null
+  local code
+  code="$(json_get '.debugCode')"
+  [[ -n "$code" && "$code" != "null" ]] || fail "Email debug code not returned for $email"
+
+  log "Verify email: $email"
+  request POST "/api/auth/verify-email" "" "{\"email\":\"$email\",\"code\":\"$code\"}" "200" >/dev/null
+}
+
+verify_phone() {
+  local phone="$1"
+
+  request POST "/api/auth/resend-phone-code" "" "{\"phone\":\"$phone\"}" "200" >/dev/null
+  local code
+  code="$(json_get '.debugCode')"
+  [[ -n "$code" && "$code" != "null" ]] || fail "Phone debug code not returned for $phone"
+
+  log "Verify phone: $phone"
+  request POST "/api/auth/verify-phone" "" "{\"phone\":\"$phone\",\"code\":\"$code\"}" "200" >/dev/null
 }
 
 approve_pending_user_by_email() {
@@ -182,8 +209,10 @@ create_load() {
     \"deliveryState\":\"TX\",
     \"equipmentType\":\"BOX_TRUCK_26FT\",
     \"weight\":12000,
+    \"weightLbs\":12000,
     \"rate\":2400.00,
     \"notes\":\"Negative E2E test load $ref\",
+    \"description\":\"Negative E2E beta load $ref\",
     \"pickupDate\":\"2026-07-01\",
     \"deliveryDate\":\"2026-07-03\",
     \"miles\":925,
@@ -211,8 +240,12 @@ setup_approved_company() {
   local company_name="$3"
   local plan="${4:-PRO}"
 
-  local email company_id token
-  email="$(register_company_user "$type" "$prefix" "$company_name")"
+  local email company_id token pack phone
+  pack="$(register_company_user "$type" "$prefix" "$company_name")"
+  email="${pack%%|*}"
+  phone="${pack##*|}"
+  verify_email "$email"
+  verify_phone "$phone"
   approve_pending_user_by_email "$admin_token" "$email"
   company_id="$(approve_pending_company_by_name "$admin_token" "$company_name")"
   if [[ "$plan" != "FREE" ]]; then
@@ -244,7 +277,11 @@ request POST "/api/conversations/$conversation_id/messages" "$broker_token" "{\"
 message_id="$(json_get '.id')"
 
 log "NEG-01: unapproved broker company cannot create load"
-unapproved_broker_email="$(register_company_user BROKER "unapproved.broker" "NEG Unapproved Broker")"
+unapproved_broker_pack="$(register_company_user BROKER "unapproved.broker" "NEG Unapproved Broker")"
+unapproved_broker_email="${unapproved_broker_pack%%|*}"
+unapproved_broker_phone="${unapproved_broker_pack##*|}"
+verify_email "$unapproved_broker_email"
+verify_phone "$unapproved_broker_phone"
 approve_pending_user_by_email "$admin_token" "$unapproved_broker_email"
 unapproved_broker_token="$(login "$unapproved_broker_email" "$PASSWORD")"
 expect_fail POST "/api/loads" "$unapproved_broker_token" "{
@@ -254,6 +291,7 @@ expect_fail POST "/api/loads" "$unapproved_broker_token" "{
   \"deliveryState\":\"TX\",
   \"equipmentType\":\"BOX_TRUCK_26FT\",
   \"weight\":12000,
+  \"weightLbs\":12000,
   \"rate\":2400.00,
   \"notes\":\"Should fail\",
   \"pickupDate\":\"2026-07-01\",
@@ -264,7 +302,11 @@ expect_fail POST "/api/loads" "$unapproved_broker_token" "{
 }" "unapproved broker create load" 403
 
 log "NEG-02: unapproved fleet company cannot submit offer"
-unapproved_fleet_email="$(register_company_user FLEET "unapproved.fleet" "NEG Unapproved Fleet")"
+unapproved_fleet_pack="$(register_company_user FLEET "unapproved.fleet" "NEG Unapproved Fleet")"
+unapproved_fleet_email="${unapproved_fleet_pack%%|*}"
+unapproved_fleet_phone="${unapproved_fleet_pack##*|}"
+verify_email "$unapproved_fleet_email"
+verify_phone "$unapproved_fleet_phone"
 approve_pending_user_by_email "$admin_token" "$unapproved_fleet_email"
 unapproved_fleet_token="$(login "$unapproved_fleet_email" "$PASSWORD")"
 expect_fail POST "/api/loads/$load_id/offers" "$unapproved_fleet_token" "{\"amount\":2100.00,\"message\":\"Should fail\"}" "unapproved fleet submit offer" 403

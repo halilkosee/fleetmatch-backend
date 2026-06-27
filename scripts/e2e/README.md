@@ -16,6 +16,7 @@ Example admin values used locally:
 ```bash
 ADMIN_EMAIL=admin@fleetmatch.com
 ADMIN_PASSWORD=123456
+E2E_PASSWORD=E2eTest!123
 ```
 
 ## Happy Path MVP Workflow
@@ -26,6 +27,8 @@ Runs the full Broker-to-Fleet lifecycle:
 - Admin login
 - Broker register
 - Fleet register
+- Email OTP verification
+- Phone OTP verification
 - User approval
 - Company approval
 - PRO subscription assignment
@@ -75,7 +78,7 @@ NEGATIVE E2E PASSED
 ```bash
 BASE_URL=http://localhost:8080
 RUN_ID=manual-test-001
-E2E_PASSWORD=123456
+E2E_PASSWORD=E2eTest!123
 ```
 
 `RUN_ID` is used in generated emails and reference numbers. If omitted, the

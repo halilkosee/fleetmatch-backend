@@ -1,178 +1,190 @@
 package com.fleetmatch.common.exception;
 
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidation(
-            MethodArgumentNotValidException ex
+    public ResponseEntity<ApiError> handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
     ) {
 
-        Map<String, String> errors = new HashMap<>();
-
-        ex.getBindingResult()
+        List<String> details = ex.getBindingResult()
                 .getFieldErrors()
-                .forEach(error ->
-                        errors.put(
-                                error.getField(),
-                                error.getDefaultMessage()
-                        ));
-
-        Map<String, Object> response = new HashMap<>();
-
-        response.put(
-                "timestamp",
-                LocalDateTime.now()
-        );
-
-        response.put(
-                "status",
-                HttpStatus.BAD_REQUEST.value()
-        );
-
-        response.put(
-                "errors",
-                errors
-        );
+                .stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .toList();
 
         return ResponseEntity
                 .badRequest()
-                .body(response);
+                .body(error(
+                        HttpStatus.BAD_REQUEST,
+                        "VALIDATION_ERROR",
+                        "Validation failed",
+                        request.getRequestURI(),
+                        details
+                ));
     }
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
     public ResponseEntity<ApiError> handleAlreadyExists(
-            ResourceAlreadyExistsException ex
+            ResourceAlreadyExistsException ex,
+            HttpServletRequest request
     ) {
-
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                ex.getMessage()
-        );
-
-        return ResponseEntity.badRequest().body(error);
+        return ResponseEntity.badRequest().body(error(
+                HttpStatus.BAD_REQUEST,
+                "RESOURCE_ALREADY_EXISTS",
+                ex.getMessage(),
+                request.getRequestURI()
+        ));
     }
 
-    @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<ApiError> handleAuthentication(
-            AuthenticationException ex
+    @ExceptionHandler({
+            HttpMessageNotReadableException.class,
+            MethodArgumentTypeMismatchException.class,
+            PropertyReferenceException.class
+    })
+    public ResponseEntity<ApiError> handleBadRequest(
+            Exception ex,
+            HttpServletRequest request
     ) {
-
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.UNAUTHORIZED.value(),
-                ex.getMessage()
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(error);
-    }
-
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiError> handleIllegalArgument(
-            IllegalArgumentException ex
-    ) {
-
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                ex.getMessage()
-        );
-
         return ResponseEntity
                 .badRequest()
-                .body(error);
+                .body(error(
+                        HttpStatus.BAD_REQUEST,
+                        "BAD_REQUEST",
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(
-            Exception ex
+            Exception ex,
+            HttpServletRequest request
     ) {
-
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                ex.getMessage()
-        );
-
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(error);
+                .body(error(
+                        HttpStatus.INTERNAL_SERVER_ERROR,
+                        "INTERNAL_ERROR",
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
     }
 
     @ExceptionHandler(AccountNotActiveException.class)
     public ResponseEntity<ApiError> handleAccountNotActive(
-            AccountNotActiveException ex
+            AccountNotActiveException ex,
+            HttpServletRequest request
     ) {
-
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.FORBIDDEN.value(),
-                ex.getMessage()
-        );
-
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(error);
+                .body(error(
+                        HttpStatus.FORBIDDEN,
+                        "ACCOUNT_NOT_ACTIVE",
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiError> handleNotFound(
-            ResourceNotFoundException ex
+            ResourceNotFoundException ex,
+            HttpServletRequest request
     ) {
-
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.NOT_FOUND.value(),
-                ex.getMessage()
-        );
-
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
-                .body(error);
+                .body(error(
+                        HttpStatus.NOT_FOUND,
+                        "NOT_FOUND",
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(
-            AccessDeniedException ex
+            AccessDeniedException ex,
+            HttpServletRequest request
     ) {
-
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.FORBIDDEN.value(),
-                ex.getMessage()
-        );
-
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(error);
+                .body(error(
+                        HttpStatus.FORBIDDEN,
+                        "ACCESS_DENIED",
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
     }
 
     @ExceptionHandler(BusinessRuleException.class)
     public ResponseEntity<ApiError> handleBusinessRule(
-            BusinessRuleException ex
+            BusinessRuleException ex,
+            HttpServletRequest request
     ) {
-        ApiError error = new ApiError(
-                LocalDateTime.now(),
-                HttpStatus.BAD_REQUEST.value(),
-                ex.getMessage()
-        );
-
         return ResponseEntity
                 .badRequest()
-                .body(error);
+                .body(error(
+                        HttpStatus.BAD_REQUEST,
+                        "BUSINESS_RULE_VIOLATION",
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(
+            BadCredentialsException ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(error(
+                        HttpStatus.UNAUTHORIZED,
+                        "BAD_CREDENTIALS",
+                        ex.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
+    private ApiError error(
+            HttpStatus status,
+            String code,
+            String message,
+            String path
+    ) {
+        return error(status, code, message, path, List.of());
+    }
+
+    private ApiError error(
+            HttpStatus status,
+            String code,
+            String message,
+            String path,
+            List<String> details
+    ) {
+        return new ApiError(
+                LocalDateTime.now(),
+                status.value(),
+                code,
+                message,
+                path,
+                details
+        );
     }
 }

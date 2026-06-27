@@ -6,6 +6,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @Entity
@@ -22,6 +24,16 @@ public class User extends BaseEntity {
     private String email;
 
     private String phone;
+
+    @Column(nullable = false)
+    private boolean emailVerified;
+
+    private LocalDateTime emailVerifiedAt;
+
+    @Column(nullable = false)
+    private boolean phoneVerified;
+
+    private LocalDateTime phoneVerifiedAt;
 
     @Column(nullable = false)
     private String password;

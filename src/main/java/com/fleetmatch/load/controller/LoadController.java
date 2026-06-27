@@ -14,6 +14,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/loads")
@@ -66,6 +68,39 @@ public class LoadController {
         );
     }
 
+    @GetMapping("/search/paged")
+    public Page<LoadResponse> searchLoadsPaged(
+            @RequestParam(required = false) String pickupState,
+            @RequestParam(required = false) String deliveryState,
+            @RequestParam(required = false) EquipmentType equipmentType,
+            @RequestParam(required = false) LocalDate pickupDateFrom,
+            @RequestParam(required = false) LocalDate pickupDateTo,
+            @RequestParam(required = false) Integer minWeight,
+            @RequestParam(required = false) Integer maxWeight,
+            @RequestParam(required = false) BigDecimal minRate,
+            @RequestParam(required = false) BigDecimal maxRate,
+            @RequestParam(required = false) com.fleetmatch.load.entity.LoadStatus status,
+            @RequestParam(required = false) String keyword,
+            Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return loadService.searchLoadsPaged(
+                pickupState,
+                deliveryState,
+                equipmentType,
+                pickupDateFrom,
+                pickupDateTo,
+                minWeight,
+                maxWeight,
+                minRate,
+                maxRate,
+                status,
+                keyword,
+                pageable,
+                currentUser
+        );
+    }
+
     @GetMapping("/{loadId}")
     public LoadResponse getLoadById(
             @PathVariable UUID loadId,
@@ -101,5 +136,13 @@ public class LoadController {
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         return loadService.cancelLoad(loadId, currentUser);
+    }
+
+    @PostMapping("/{loadId}/duplicate")
+    public LoadResponse duplicateLoad(
+            @PathVariable UUID loadId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return loadService.duplicateLoad(loadId, currentUser);
     }
 }

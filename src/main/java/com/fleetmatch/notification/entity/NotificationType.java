@@ -1,0 +1,15 @@
+package com.fleetmatch.notification.entity;
+
+public enum NotificationType {
+    NEW_OFFER,
+    OFFER_ACCEPTED,
+    FLEET_CONFIRMED,
+    NEW_MESSAGE,
+    LOAD_STARTED,
+    LOAD_DELIVERED,
+    LOAD_CANCELLED,
+    COMPANY_APPROVED,
+    COMPANY_REJECTED,
+    SUBSCRIPTION_ASSIGNED,
+    SUBSCRIPTION_EXPIRING
+}

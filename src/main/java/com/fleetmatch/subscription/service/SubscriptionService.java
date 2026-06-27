@@ -1,7 +1,11 @@
 package com.fleetmatch.subscription.service;
 
+import com.fleetmatch.audit.entity.AuditAction;
+import com.fleetmatch.audit.service.AuditLogService;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.entity.Company;
+import com.fleetmatch.notification.entity.NotificationType;
+import com.fleetmatch.notification.service.NotificationService;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.subscription.dto.*;
 import com.fleetmatch.subscription.entity.CompanySubscription;
@@ -10,7 +14,6 @@ import com.fleetmatch.subscription.repository.CompanySubscriptionRepository;
 import com.fleetmatch.subscription.repository.SubscriptionPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -26,6 +29,8 @@ public class SubscriptionService {
 
     private final CompanySubscriptionRepository
             companySubscriptionRepository;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public SubscriptionPlanResponse createPlan(
             CreateSubscriptionPlanRequest request
@@ -125,7 +130,6 @@ public class SubscriptionService {
         );
     }
 
-    @Transactional
     public CompanySubscriptionResponse assignPlanToCompany(
             AssignSubscriptionRequest request
     ) {
@@ -209,6 +213,15 @@ public class SubscriptionService {
         CompanySubscription saved =
                 companySubscriptionRepository
                         .save(subscription);
+        notificationService.createForCompany(
+                company,
+                NotificationType.SUBSCRIPTION_ASSIGNED,
+                "Subscription assigned",
+                "A subscription plan was assigned to your company",
+                "SUBSCRIPTION",
+                saved.getId()
+        );
+        auditLogService.log(null, AuditAction.SUBSCRIPTION_ASSIGNED, "SUBSCRIPTION", saved.getId(), "Subscription assigned");
 
         return mapSubscription(saved);
     }
@@ -246,7 +259,6 @@ public class SubscriptionService {
         );
     }
 
-    @Transactional
     public void assignFreePlan(
             Company company
     ) {

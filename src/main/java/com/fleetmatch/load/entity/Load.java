@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 @Getter
 @Setter
@@ -47,6 +48,8 @@ public class Load extends BaseEntity {
 
     private Integer weight;
 
+    private Integer weightLbs;
+
     @Column(nullable = false)
     private BigDecimal rate;
 
@@ -62,4 +65,40 @@ public class Load extends BaseEntity {
 
     @Column(length = 1000)
     private String notes;
+
+    @Column(length = 1000)
+    private String description;
+
+    private String pickupStreetAddress;
+    private String pickupZipCode;
+    private String pickupLocationName;
+    private String pickupContactName;
+    private String pickupContactPhone;
+    private LocalTime pickupTimeWindowStart;
+    private LocalTime pickupTimeWindowEnd;
+
+    @Column(length = 1000)
+    private String pickupInstructions;
+
+    private String deliveryStreetAddress;
+    private String deliveryZipCode;
+    private String deliveryLocationName;
+    private String deliveryContactName;
+    private String deliveryContactPhone;
+    private LocalTime deliveryTimeWindowStart;
+    private LocalTime deliveryTimeWindowEnd;
+
+    @Column(length = 1000)
+    private String deliveryInstructions;
+
+    private Integer palletCount;
+    private Integer pieceCount;
+    private Integer lengthInches;
+    private Integer widthInches;
+    private Integer heightInches;
+
+    private boolean liftgateRequired;
+    private boolean palletJackRequired;
+    private boolean dockHighRequired;
+    private boolean residentialDelivery;
 }

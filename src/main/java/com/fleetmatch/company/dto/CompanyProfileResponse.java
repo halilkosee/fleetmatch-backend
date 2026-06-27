@@ -26,4 +26,12 @@ public class CompanyProfileResponse {
     private String phone;
 
     private String website;
+
+    private String dbaName;
+
+    private String email;
+
+    private Integer fleetSize;
+
+    private String description;
 }

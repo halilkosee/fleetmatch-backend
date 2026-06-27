@@ -6,38 +6,18 @@ import com.fleetmatch.load.entity.LoadStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-public interface LoadRepository extends JpaRepository<Load, UUID> {
+public interface LoadRepository extends JpaRepository<Load, UUID>, JpaSpecificationExecutor<Load> {
 
-    @Override
-    @EntityGraph(attributePaths = {
-            "brokerCompany",
-            "createdBy"
-    })
-    Optional<Load> findById(UUID id);
-
-    @EntityGraph(attributePaths = {
-            "brokerCompany",
-            "createdBy"
-    })
     List<Load> findByStatus(LoadStatus status);
 
-    @EntityGraph(attributePaths = {
-            "brokerCompany",
-            "createdBy"
-    })
     Page<Load> findByStatus(LoadStatus status, Pageable pageable);
 
-    @EntityGraph(attributePaths = {
-            "brokerCompany",
-            "createdBy"
-    })
     List<Load> findByStatusAndPickupStateIgnoreCaseAndDeliveryStateIgnoreCaseAndEquipmentType(
             LoadStatus status,
             String pickupState,
@@ -45,28 +25,16 @@ public interface LoadRepository extends JpaRepository<Load, UUID> {
             EquipmentType equipmentType
     );
 
-    @EntityGraph(attributePaths = {
-            "brokerCompany",
-            "createdBy"
-    })
     List<Load> findByStatusAndPickupStateIgnoreCase(
             LoadStatus status,
             String pickupState
     );
 
-    @EntityGraph(attributePaths = {
-            "brokerCompany",
-            "createdBy"
-    })
     List<Load> findByStatusAndDeliveryStateIgnoreCase(
             LoadStatus status,
             String deliveryState
     );
 
-    @EntityGraph(attributePaths = {
-            "brokerCompany",
-            "createdBy"
-    })
     List<Load> findByStatusAndEquipmentType(
             LoadStatus status,
             EquipmentType equipmentType
@@ -74,16 +42,16 @@ public interface LoadRepository extends JpaRepository<Load, UUID> {
 
     long countByStatus(LoadStatus status);
 
+    long countByBrokerCompanyId(UUID brokerCompanyId);
+
+    long countByBrokerCompanyIdAndStatus(UUID brokerCompanyId, LoadStatus status);
+
     long countByBrokerCompanyIdAndCreatedAtBetween(
             UUID brokerCompanyId,
             LocalDateTime start,
             LocalDateTime end
     );
 
-    @EntityGraph(attributePaths = {
-            "brokerCompany",
-            "createdBy"
-    })
     Page<Load> findByBrokerCompanyId(UUID brokerCompanyId, Pageable pageable);
 
 }

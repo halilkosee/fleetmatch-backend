@@ -5,7 +5,7 @@ BASE_URL="${BASE_URL:-http://localhost:8080}"
 ADMIN_EMAIL="${ADMIN_EMAIL:-}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-}"
 RUN_ID="${RUN_ID:-$(date +%s)}"
-PASSWORD="${E2E_PASSWORD:-123456}"
+PASSWORD="${E2E_PASSWORD:-E2eTest!123}"
 
 if [[ -z "$ADMIN_EMAIL" || -z "$ADMIN_PASSWORD" ]]; then
   echo "ADMIN_EMAIL and ADMIN_PASSWORD are required."
@@ -83,6 +83,9 @@ register_company_user() {
   local company_name="$3"
   local email="${prefix}.${RUN_ID}@easyfleetmatch.test"
   local company_email="${prefix}.company.${RUN_ID}@easyfleetmatch.test"
+  local phone_suffix
+  phone_suffix="$(printf '%s' "$prefix" | cksum | awk '{print ($1 % 900) + 100}')"
+  local phone="555-${RUN_ID: -3}-$phone_suffix"
 
   log "Register $type user: $email"
   request POST "/api/auth/register" "" "{
@@ -94,11 +97,35 @@ register_company_user() {
     \"firstName\":\"E2E\",
     \"lastName\":\"$prefix\",
     \"email\":\"$email\",
-    \"phone\":\"555-200-$RUN_ID\",
+    \"phone\":\"$phone\",
     \"password\":\"$PASSWORD\"
   }" "200" >/dev/null
 
-  echo "$email"
+  echo "$email|$phone"
+}
+
+verify_email() {
+  local email="$1"
+
+  request POST "/api/auth/resend-email-code" "" "{\"email\":\"$email\"}" "200" >/dev/null
+  local code
+  code="$(json_get '.debugCode')"
+  [[ -n "$code" && "$code" != "null" ]] || fail "Email debug code not returned for $email"
+
+  log "Verify email: $email"
+  request POST "/api/auth/verify-email" "" "{\"email\":\"$email\",\"code\":\"$code\"}" "200" >/dev/null
+}
+
+verify_phone() {
+  local phone="$1"
+
+  request POST "/api/auth/resend-phone-code" "" "{\"phone\":\"$phone\"}" "200" >/dev/null
+  local code
+  code="$(json_get '.debugCode')"
+  [[ -n "$code" && "$code" != "null" ]] || fail "Phone debug code not returned for $phone"
+
+  log "Verify phone: $phone"
+  request POST "/api/auth/verify-phone" "" "{\"phone\":\"$phone\",\"code\":\"$code\"}" "200" >/dev/null
 }
 
 approve_pending_user_by_email() {
@@ -162,8 +189,17 @@ log "Admin login"
 admin_token="$(login "$ADMIN_EMAIL" "$ADMIN_PASSWORD")"
 [[ -n "$admin_token" && "$admin_token" != "null" ]] || fail "Admin token not returned"
 
-broker_email="$(register_company_user BROKER "broker" "E2E Broker Company")"
-fleet_email="$(register_company_user FLEET "fleet" "E2E Fleet Company")"
+broker_pack="$(register_company_user BROKER "broker" "E2E Broker Company")"
+fleet_pack="$(register_company_user FLEET "fleet" "E2E Fleet Company")"
+broker_email="${broker_pack%%|*}"
+broker_phone="${broker_pack##*|}"
+fleet_email="${fleet_pack%%|*}"
+fleet_phone="${fleet_pack##*|}"
+
+verify_email "$broker_email"
+verify_phone "$broker_phone"
+verify_email "$fleet_email"
+verify_phone "$fleet_phone"
 
 approve_pending_user_by_email "$admin_token" "$broker_email"
 approve_pending_user_by_email "$admin_token" "$fleet_email"
@@ -180,6 +216,16 @@ broker_token="$(login "$broker_email" "$PASSWORD")"
 log "Fleet login"
 fleet_token="$(login "$fleet_email" "$PASSWORD")"
 
+log "Broker updates company settings"
+request PUT "/api/companies/me/settings" "$broker_token" "{
+  \"dbaName\":\"E2E Broker DBA $RUN_ID\",
+  \"website\":\"https://broker-$RUN_ID.easyfleetmatch.test\",
+  \"companyEmail\":\"broker.company.updated.$RUN_ID@easyfleetmatch.test\",
+  \"companyPhone\":\"555-300-$RUN_ID\",
+  \"fleetSize\":null,
+  \"description\":\"Broker settings updated by E2E\"
+}" "200" >/dev/null
+
 log "Broker creates load"
 request POST "/api/loads" "$broker_token" "{
   \"pickupCity\":\"Chicago\",
@@ -188,8 +234,10 @@ request POST "/api/loads" "$broker_token" "{
   \"deliveryState\":\"TX\",
   \"equipmentType\":\"BOX_TRUCK_26FT\",
   \"weight\":12000,
+  \"weightLbs\":12000,
   \"rate\":2400.00,
   \"notes\":\"E2E test load $RUN_ID\",
+  \"description\":\"E2E beta-ready load $RUN_ID\",
   \"pickupDate\":\"2026-07-01\",
   \"deliveryDate\":\"2026-07-03\",
   \"miles\":925,
@@ -226,6 +274,11 @@ request GET "/api/loads/$load_id/conversation" "$broker_token" "" "200" >/dev/nu
 conversation_id="$(json_get '.id')"
 [[ -n "$conversation_id" && "$conversation_id" != "null" ]] || fail "Conversation not returned"
 echo "Conversation: $conversation_id"
+
+log "Notifications exist after offer selection"
+request GET "/api/notifications/unread-count" "$fleet_token" "" "200" >/dev/null
+fleet_unread="$(json_get '.unreadCount')"
+[[ "$fleet_unread" -ge 1 ]] || fail "Expected fleet unread notifications, got $fleet_unread"
 
 log "Broker sends message"
 request POST "/api/conversations/$conversation_id/messages" "$broker_token" "{\"body\":\"Broker E2E dispatch message $RUN_ID\"}" "200" >/dev/null
@@ -269,6 +322,51 @@ request GET "/api/loads/$load_id" "$broker_token" "" "200" >/dev/null
 final_status="$(json_get '.status')"
 [[ "$final_status" == "DELIVERED" ]] || fail "Expected final load DELIVERED, got $final_status"
 
+log "Dashboard KPI checks"
+request GET "/api/dashboard/broker" "$broker_token" "" "200" >/dev/null
+delivered_loads="$(json_get '.deliveredLoads')"
+[[ "$delivered_loads" -ge 1 ]] || fail "Expected broker deliveredLoads >= 1"
+request GET "/api/dashboard/fleet" "$fleet_token" "" "200" >/dev/null
+fleet_delivered_loads="$(json_get '.deliveredLoads')"
+[[ "$fleet_delivered_loads" -ge 1 ]] || fail "Expected fleet deliveredLoads >= 1"
+
+log "Duplicate load"
+request POST "/api/loads/$load_id/duplicate" "$broker_token" "" "200" >/dev/null
+duplicate_load_id="$(json_get '.id')"
+duplicate_status="$(json_get '.status')"
+[[ "$duplicate_status" == "POSTED" ]] || fail "Expected duplicate load POSTED, got $duplicate_status"
+
+log "Search filters"
+request GET "/api/loads/search/paged?pickupState=IL&deliveryState=TX&equipmentType=BOX_TRUCK_26FT&page=0&size=10" "$fleet_token" "" "200" >/dev/null
+search_count="$(json_get '.content | length')"
+[[ "$search_count" -ge 1 ]] || fail "Expected search to return at least one load"
+
+log "Audit logs created"
+request GET "/api/admin/audit-logs?page=0&size=20" "$admin_token" "" "200" >/dev/null
+audit_count="$(json_get '.content | length')"
+[[ "$audit_count" -ge 1 ]] || fail "Expected audit logs"
+
+log "Change broker email"
+new_broker_email="broker.changed.${RUN_ID}@easyfleetmatch.test"
+request POST "/api/users/me/change-email/request" "$broker_token" "{\"newEmail\":\"$new_broker_email\"}" "200" >/dev/null
+email_change_code="$(json_get '.debugCode')"
+request POST "/api/users/me/change-email/verify" "$broker_token" "{\"newEmail\":\"$new_broker_email\",\"code\":\"$email_change_code\"}" "200" >/dev/null
+broker_email="$new_broker_email"
+broker_token="$(login "$broker_email" "$PASSWORD")"
+
+log "Change broker phone"
+new_broker_phone="555-400-${RUN_ID: -4}"
+request POST "/api/users/me/change-phone/request" "$broker_token" "{\"newPhone\":\"$new_broker_phone\"}" "200" >/dev/null
+phone_change_code="$(json_get '.debugCode')"
+request POST "/api/users/me/change-phone/verify" "$broker_token" "{\"newPhone\":\"$new_broker_phone\",\"code\":\"$phone_change_code\"}" "200" >/dev/null
+
+log "Forgot/reset password"
+new_password="E2eReset!123"
+request POST "/api/auth/forgot-password" "" "{\"email\":\"$broker_email\"}" "200" >/dev/null
+reset_code="$(json_get '.debugCode')"
+request POST "/api/auth/reset-password" "" "{\"email\":\"$broker_email\",\"code\":\"$reset_code\",\"newPassword\":\"$new_password\"}" "200" >/dev/null
+broker_token="$(login "$broker_email" "$new_password")"
+
 cat <<EOF
 
 E2E PASSED
@@ -278,5 +376,6 @@ Fleet email: $fleet_email
 Load ID: $load_id
 Offer ID: $offer_id
 Conversation ID: $conversation_id
+Duplicate Load ID: $duplicate_load_id
 Final load status: $final_status
 EOF
