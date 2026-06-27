@@ -18,10 +18,18 @@ docker compose --env-file .env.local -f docker-compose.dev.yml up -d postgres re
 
 Using local PostgreSQL:
 
+```bash
+POSTGRES_USER=postgres scripts/setup-local-db.sh
+```
+
+Equivalent SQL:
+
 ```sql
-CREATE DATABASE fleetmatch_local;
 CREATE USER fleetmatch_local WITH PASSWORD 'fleetmatch_local';
+CREATE DATABASE fleetmatch_local OWNER fleetmatch_local;
 GRANT ALL PRIVILEGES ON DATABASE fleetmatch_local TO fleetmatch_local;
+GRANT USAGE, CREATE ON SCHEMA public TO fleetmatch_local;
+ALTER SCHEMA public OWNER TO fleetmatch_local;
 ```
 
 ## DEV Database
