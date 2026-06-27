@@ -1,5 +1,7 @@
 package com.fleetmatch.messaging.service;
 
+import com.fleetmatch.audit.entity.AuditAction;
+import com.fleetmatch.audit.service.AuditLogService;
 import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.entity.Company;
@@ -40,6 +42,7 @@ public class MessagingService {
     private final UserVerificationGuard userVerificationGuard;
     private final NotificationService notificationService;
     private final ConversationRealtimeService conversationRealtimeService;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public Conversation createConversationForSelectedOffer(Offer offer) {
@@ -188,6 +191,13 @@ public class MessagingService {
                 "CONVERSATION",
                 conversation.getId()
         );
+        auditLogService.log(
+                user,
+                AuditAction.MESSAGE_SENT,
+                "MESSAGE",
+                response.getId(),
+                "Message sent in conversation " + conversation.getId()
+        );
         publishConversationEvent("MESSAGE_CREATED", response);
 
         return response;
@@ -237,6 +247,13 @@ public class MessagingService {
         MessageResponse response = toMessageResponse(
                 messageRepository.save(message)
         );
+        auditLogService.log(
+                user,
+                AuditAction.MESSAGE_READ,
+                "MESSAGE",
+                message.getId(),
+                "Message marked as read"
+        );
         publishConversationEvent("MESSAGE_READ", response);
         return response;
     }
@@ -283,6 +300,13 @@ public class MessagingService {
 
         MessageResponse response = toMessageResponse(
                 messageRepository.save(message)
+        );
+        auditLogService.log(
+                user,
+                AuditAction.MESSAGE_DELETED,
+                "MESSAGE",
+                message.getId(),
+                "Message soft deleted"
         );
         publishConversationEvent("MESSAGE_DELETED", response);
         return response;

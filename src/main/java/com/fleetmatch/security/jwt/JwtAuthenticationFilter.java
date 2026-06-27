@@ -1,7 +1,6 @@
 package com.fleetmatch.security.jwt;
 
 import com.fleetmatch.security.user.CustomUserDetailsService;
-import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -12,6 +11,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.fleetmatch.security.user.CustomUserDetails;
+import com.fleetmatch.user.entity.UserStatus;
 
 import java.io.IOException;
 
@@ -37,18 +38,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String email;
-
-        try {
-            email = jwtService.extractUsername(token);
-        } catch (JwtException | IllegalArgumentException ex) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            return;
-        }
+        String email = jwtService.extractUsername(token);
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            var userDetails = userDetailsService.loadUserByUsername(email);
+            var userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(email);
+
+            if (userDetails.getUser().getStatus() != UserStatus.ACTIVE ||
+                    !jwtService.isTokenValidForUser(token, userDetails.getUser())) {
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             var authToken = new UsernamePasswordAuthenticationToken(
                     userDetails,

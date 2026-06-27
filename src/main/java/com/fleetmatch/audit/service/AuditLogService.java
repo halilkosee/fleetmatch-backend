@@ -50,7 +50,9 @@ public class AuditLogService {
     public Page<AuditLogResponse> search(
             AuditAction action,
             String entityType,
+            UUID entityId,
             String actorEmail,
+            UUID actorCompanyId,
             LocalDateTime from,
             LocalDateTime to,
             Pageable pageable
@@ -64,8 +66,14 @@ public class AuditLogService {
             if (entityType != null && !entityType.isBlank()) {
                 predicates.add(cb.equal(root.get("entityType"), entityType));
             }
+            if (entityId != null) {
+                predicates.add(cb.equal(root.get("entityId"), entityId));
+            }
             if (actorEmail != null && !actorEmail.isBlank()) {
                 predicates.add(cb.equal(root.get("actorEmail"), actorEmail));
+            }
+            if (actorCompanyId != null) {
+                predicates.add(cb.equal(root.get("actorCompanyId"), actorCompanyId));
             }
             if (from != null) {
                 predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), from));

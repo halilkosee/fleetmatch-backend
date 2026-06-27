@@ -14,8 +14,10 @@ import com.fleetmatch.company.service.CompanyService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import com.fleetmatch.security.user.CustomUserDetails;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,14 +38,20 @@ public class AdminController {
     private final AuditLogService auditLogService;
 
     @PutMapping("/users/{userId}/approve")
-    public String approveUser(@PathVariable UUID userId) {
-        adminService.approveUser(userId);
+    public String approveUser(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        adminService.approveUser(userId, currentUser);
         return "User approved";
     }
 
     @PutMapping("/users/{userId}/suspend")
-    public String suspendUser(@PathVariable UUID userId) {
-        adminService.suspendUser(userId);
+    public String suspendUser(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        adminService.suspendUser(userId, currentUser);
         return "User suspended";
     }
 
@@ -59,33 +67,37 @@ public class AdminController {
 
     @PutMapping("/companies/{companyId}/verify")
     public String verifyCompany(
-            @PathVariable UUID companyId
+            @PathVariable UUID companyId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        companyService.verifyCompany(companyId);
+        companyService.verifyCompany(companyId, currentUser);
         return "Company verified";
     }
 
     @PatchMapping("/companies/{companyId}/approve")
     public String approveCompany(
-            @PathVariable UUID companyId
+            @PathVariable UUID companyId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        companyService.verifyCompany(companyId);
+        companyService.verifyCompany(companyId, currentUser);
         return "Company approved";
     }
 
     @PutMapping("/companies/{companyId}/reject")
     public String rejectCompany(
-            @PathVariable UUID companyId
+            @PathVariable UUID companyId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        companyService.rejectCompany(companyId);
+        companyService.rejectCompany(companyId, currentUser);
         return "Company rejected";
     }
 
     @PatchMapping("/companies/{companyId}/reject")
     public String patchRejectCompany(
-            @PathVariable UUID companyId
+            @PathVariable UUID companyId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
-        companyService.rejectCompany(companyId);
+        companyService.rejectCompany(companyId, currentUser);
         return "Company rejected";
     }
 
@@ -110,7 +122,9 @@ public class AdminController {
     public Page<AuditLogResponse> getAuditLogs(
             @RequestParam(required = false) AuditAction action,
             @RequestParam(required = false) String entityType,
+            @RequestParam(required = false) UUID entityId,
             @RequestParam(required = false) String actorEmail,
+            @RequestParam(required = false) UUID actorCompanyId,
             @RequestParam(required = false) LocalDateTime from,
             @RequestParam(required = false) LocalDateTime to,
             Pageable pageable
@@ -118,7 +132,9 @@ public class AdminController {
         return auditLogService.search(
                 action,
                 entityType,
+                entityId,
                 actorEmail,
+                actorCompanyId,
                 from,
                 to,
                 pageable

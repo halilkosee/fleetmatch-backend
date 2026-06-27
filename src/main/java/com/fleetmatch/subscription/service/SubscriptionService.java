@@ -7,11 +7,14 @@ import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.notification.entity.NotificationType;
 import com.fleetmatch.notification.service.NotificationService;
 import com.fleetmatch.company.repository.CompanyRepository;
+import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.subscription.dto.*;
 import com.fleetmatch.subscription.entity.CompanySubscription;
 import com.fleetmatch.subscription.entity.SubscriptionPlan;
 import com.fleetmatch.subscription.repository.CompanySubscriptionRepository;
 import com.fleetmatch.subscription.repository.SubscriptionPlanRepository;
+import com.fleetmatch.user.entity.User;
+import com.fleetmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,9 +34,17 @@ public class SubscriptionService {
             companySubscriptionRepository;
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
+    private final UserRepository userRepository;
 
     public SubscriptionPlanResponse createPlan(
             CreateSubscriptionPlanRequest request
+    ) {
+        return createPlan(request, null);
+    }
+
+    public SubscriptionPlanResponse createPlan(
+            CreateSubscriptionPlanRequest request,
+            CustomUserDetails currentUser
     ) {
 
         SubscriptionPlan plan = new SubscriptionPlan();
@@ -52,6 +63,13 @@ public class SubscriptionService {
 
         SubscriptionPlan savedPlan =
                 subscriptionPlanRepository.save(plan);
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.SUBSCRIPTION_PLAN_CREATED,
+                "SUBSCRIPTION_PLAN",
+                savedPlan.getId(),
+                "Subscription plan created"
+        );
 
         return mapToResponse(savedPlan);
     }
@@ -59,6 +77,14 @@ public class SubscriptionService {
     public SubscriptionPlanResponse updatePlan(
             UUID planId,
             UpdateSubscriptionPlanRequest request
+    ) {
+        return updatePlan(planId, request, null);
+    }
+
+    public SubscriptionPlanResponse updatePlan(
+            UUID planId,
+            UpdateSubscriptionPlanRequest request,
+            CustomUserDetails currentUser
     ) {
 
         SubscriptionPlan plan =
@@ -85,6 +111,13 @@ public class SubscriptionService {
 
         SubscriptionPlan updatedPlan =
                 subscriptionPlanRepository.save(plan);
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.SUBSCRIPTION_PLAN_UPDATED,
+                "SUBSCRIPTION_PLAN",
+                updatedPlan.getId(),
+                "Subscription plan updated"
+        );
 
         return mapToResponse(updatedPlan);
     }
@@ -132,6 +165,13 @@ public class SubscriptionService {
 
     public CompanySubscriptionResponse assignPlanToCompany(
             AssignSubscriptionRequest request
+    ) {
+        return assignPlanToCompany(request, null);
+    }
+
+    public CompanySubscriptionResponse assignPlanToCompany(
+            AssignSubscriptionRequest request,
+            CustomUserDetails currentUser
     ) {
 
         Company company =
@@ -221,7 +261,20 @@ public class SubscriptionService {
                 "SUBSCRIPTION",
                 saved.getId()
         );
-        auditLogService.log(null, AuditAction.SUBSCRIPTION_ASSIGNED, "SUBSCRIPTION", saved.getId(), "Subscription assigned");
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.SUBSCRIPTION_ASSIGNED,
+                "SUBSCRIPTION",
+                saved.getId(),
+                "Subscription assigned"
+        );
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.SUBSCRIPTION_CHANGED,
+                "COMPANY",
+                company.getId(),
+                "Company subscription changed to plan " + plan.getName()
+        );
 
         return mapSubscription(saved);
     }
@@ -317,5 +370,14 @@ public class SubscriptionService {
                 .stream()
                 .map(this::mapSubscription)
                 .toList();
+    }
+
+    private User getActor(CustomUserDetails currentUser) {
+        if (currentUser == null) {
+            return null;
+        }
+
+        return userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

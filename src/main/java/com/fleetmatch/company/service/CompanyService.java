@@ -1,5 +1,6 @@
 package com.fleetmatch.company.service;
 
+import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.audit.entity.AuditAction;
 import com.fleetmatch.audit.service.AuditLogService;
@@ -23,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fleetmatch.company.dto.CompanyResponse;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -36,6 +38,10 @@ public class CompanyService {
     private final NotificationService notificationService;
 
     public void verifyCompany(UUID companyId) {
+        verifyCompany(companyId, null);
+    }
+
+    public void verifyCompany(UUID companyId, CustomUserDetails currentUser) {
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
@@ -53,10 +59,14 @@ public class CompanyService {
                 "COMPANY",
                 company.getId()
         );
-        auditLogService.log(null, AuditAction.COMPANY_APPROVED, "COMPANY", company.getId(), "Company approved");
+        auditLogService.log(getActor(currentUser), AuditAction.COMPANY_APPROVED, "COMPANY", company.getId(), "Company approved");
     }
 
     public void rejectCompany(UUID companyId) {
+        rejectCompany(companyId, null);
+    }
+
+    public void rejectCompany(UUID companyId, CustomUserDetails currentUser) {
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
@@ -74,7 +84,7 @@ public class CompanyService {
                 "COMPANY",
                 company.getId()
         );
-        auditLogService.log(null, AuditAction.COMPANY_REJECTED, "COMPANY", company.getId(), "Company rejected");
+        auditLogService.log(getActor(currentUser), AuditAction.COMPANY_REJECTED, "COMPANY", company.getId(), "Company rejected");
     }
 
     public List<PendingCompanyResponse> getPendingCompanies() {
@@ -153,12 +163,25 @@ public class CompanyService {
 
         Company company = user.getCompany();
 
-        company.setMcNumber(request.getMcNumber());
-        company.setDotNumber(request.getDotNumber());
+        if (user.getCompanyUserRole() != CompanyUserRole.OWNER) {
+            throw new AccessDeniedException("Only owners can update company profile");
+        }
+
+        if (request.getMcNumber() != null &&
+                !Objects.equals(request.getMcNumber(), company.getMcNumber())) {
+            throw new BusinessRuleException("MC number cannot be updated directly");
+        }
+
+        if (request.getDotNumber() != null &&
+                !Objects.equals(request.getDotNumber(), company.getDotNumber())) {
+            throw new BusinessRuleException("DOT number cannot be updated directly");
+        }
+
         company.setPhone(request.getPhone());
         company.setWebsite(request.getWebsite());
 
         Company saved = companyRepository.save(company);
+        auditLogService.log(user, AuditAction.COMPANY_UPDATED, "COMPANY", saved.getId(), "Company profile updated");
 
         return new CompanyProfileResponse(
                 saved.getId(),
@@ -223,5 +246,14 @@ public class CompanyService {
                 company.getFleetSize(),
                 company.getDescription()
         );
+    }
+
+    private User getActor(CustomUserDetails currentUser) {
+        if (currentUser == null) {
+            return null;
+        }
+
+        return userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

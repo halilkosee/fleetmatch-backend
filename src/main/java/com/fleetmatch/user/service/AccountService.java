@@ -60,6 +60,9 @@ public class AccountService {
 
         passwordPolicyService.validate(request.getNewPassword());
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setCredentialsChangedAt(LocalDateTime.now());
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
         userRepository.save(user);
         auditLogService.log(user, AuditAction.PASSWORD_CHANGED, "USER", user.getId(), "Password changed");
     }
@@ -105,6 +108,7 @@ public class AccountService {
         user.setEmail(request.getNewEmail());
         user.setEmailVerified(true);
         user.setEmailVerifiedAt(LocalDateTime.now());
+        user.setCredentialsChangedAt(LocalDateTime.now());
 
         User saved = userRepository.save(user);
         auditLogService.log(saved, AuditAction.EMAIL_CHANGED, "USER", saved.getId(), "Email changed");

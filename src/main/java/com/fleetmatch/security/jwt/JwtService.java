@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
 import java.util.Date;
 
 import com.fleetmatch.user.entity.User;
@@ -43,6 +44,10 @@ public class JwtService {
             claims.put("companyId", user.getCompany().getId().toString());
         }
 
+        if (user.getCompany() != null) {
+            claims.put("companyId", user.getCompany().getId().toString());
+        }
+
         return Jwts.builder()
                 .claims(claims)
                 .subject(user.getEmail())
@@ -54,12 +59,36 @@ public class JwtService {
 
     public String extractUsername(String token) {
 
-        Claims claims = Jwts.parser()
+        Claims claims = extractClaims(token);
+
+        return claims.getSubject();
+    }
+
+    public boolean isTokenValidForUser(String token, User user) {
+        Claims claims = extractClaims(token);
+
+        if (!user.getEmail().equals(claims.getSubject())) {
+            return false;
+        }
+
+        if (user.getCredentialsChangedAt() == null || claims.getIssuedAt() == null) {
+            return true;
+        }
+
+        Date credentialsChangedAt = Date.from(
+                user.getCredentialsChangedAt()
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+        );
+
+        return !claims.getIssuedAt().before(credentialsChangedAt);
+    }
+
+    private Claims extractClaims(String token) {
+        return Jwts.parser()
                 .verifyWith(getSigningKey())
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
-
-        return claims.getSubject();
     }
 }

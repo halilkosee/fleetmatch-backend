@@ -273,6 +273,13 @@ public class OfferService {
                         "OFFER",
                         otherOffer.getId()
                 );
+                auditLogService.log(
+                        user,
+                        AuditAction.OFFER_REJECTED,
+                        "OFFER",
+                        otherOffer.getId(),
+                        "Offer rejected because another fleet was confirmed"
+                );
             }
         }
 
@@ -287,6 +294,13 @@ public class OfferService {
                 "Fleet confirmed the assignment",
                 "LOAD",
                 load.getId()
+        );
+        auditLogService.log(
+                user,
+                AuditAction.OFFER_CONFIRMED,
+                "OFFER",
+                saved.getId(),
+                "Fleet confirmed assignment"
         );
 
         return toResponse(saved);

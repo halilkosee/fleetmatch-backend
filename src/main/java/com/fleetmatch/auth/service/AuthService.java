@@ -40,6 +40,9 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private static final int MAX_FAILED_LOGIN_ATTEMPTS = 5;
+    private static final int LOCK_MINUTES = 15;
+
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final PasswordEncoder passwordEncoder;
@@ -86,6 +89,7 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setCredentialsChangedAt(LocalDateTime.now());
         user.setPlatformRole(PlatformRole.USER);
         user.setStatus(UserStatus.PENDING_VERIFICATION);
         user.setCompany(company);
@@ -119,26 +123,38 @@ public class AuthService {
         }
     }
 
+    @Transactional
     public AuthResponse login(String email, String password) {
 
         CustomUserDetails userDetails =
                 (CustomUserDetails) userDetailsService.loadUserByUsername(email);
+        User user = userDetails.getUser();
+
+        if (user.getLockedUntil() != null &&
+                user.getLockedUntil().isAfter(LocalDateTime.now())) {
+            throw new AccountNotActiveException(
+                    "Account is temporarily locked due to failed login attempts"
+            );
+        }
 
         if (!passwordEncoder.matches(
                 password,
                 userDetails.getPassword()
         )) {
+            recordFailedLogin(user);
             throw new BadCredentialsException("Invalid credentials");
         }
 
-        if (userDetails.getUser().getStatus() != UserStatus.ACTIVE) {
+        if (user.getStatus() != UserStatus.ACTIVE) {
             throw new AccountNotActiveException(
                     "Account is pending verification"
             );
         }
 
+        resetFailedLogin(user);
+
         String token =
-                jwtService.generateToken(userDetails.getUser());
+                jwtService.generateToken(user);
 
         return new AuthResponse(token);
     }
@@ -238,7 +254,30 @@ public class AuthService {
         );
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        user.setCredentialsChangedAt(LocalDateTime.now());
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
         userRepository.save(user);
         auditLogService.log(user, AuditAction.PASSWORD_RESET, "USER", user.getId(), "Password reset");
+    }
+
+    private void recordFailedLogin(User user) {
+        user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
+
+        if (user.getFailedLoginAttempts() >= MAX_FAILED_LOGIN_ATTEMPTS) {
+            user.setLockedUntil(LocalDateTime.now().plusMinutes(LOCK_MINUTES));
+        }
+
+        userRepository.save(user);
+    }
+
+    private void resetFailedLogin(User user) {
+        if (user.getFailedLoginAttempts() == 0 && user.getLockedUntil() == null) {
+            return;
+        }
+
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
+        userRepository.save(user);
     }
 }

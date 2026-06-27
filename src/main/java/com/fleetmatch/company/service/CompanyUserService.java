@@ -1,8 +1,11 @@
 package com.fleetmatch.company.service;
 
+import com.fleetmatch.audit.entity.AuditAction;
+import com.fleetmatch.audit.service.AuditLogService;
 import com.fleetmatch.company.dto.CompanyUserResponse;
 import com.fleetmatch.company.dto.CreateCompanyUserRequest;
 import com.fleetmatch.company.dto.UpdateCompanyUserRoleRequest;
+import com.fleetmatch.auth.service.PasswordPolicyService;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.subscription.service.SubscriptionValidationService;
 import com.fleetmatch.user.entity.CompanyUserRole;
@@ -10,7 +13,6 @@ import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
-import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.common.exception.ResourceAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -27,6 +29,8 @@ public class CompanyUserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final SubscriptionValidationService subscriptionValidationService;
+    private final PasswordPolicyService passwordPolicyService;
+    private final AuditLogService auditLogService;
 
     public void createCompanyUser(
             CreateCompanyUserRequest request,
@@ -35,7 +39,7 @@ public class CompanyUserService {
 
         User owner = userRepository.findById(
                 currentUser.getId()
-        ).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        ).orElseThrow();
 
         if (owner.getCompanyUserRole() != CompanyUserRole.OWNER) {
             throw new AccessDeniedException(
@@ -59,6 +63,8 @@ public class CompanyUserService {
                 owner.getCompany()
         );
 
+        passwordPolicyService.validate(request.getPassword());
+
         User user = new User();
 
         user.setFirstName(request.getFirstName());
@@ -79,7 +85,14 @@ public class CompanyUserService {
                 request.getCompanyUserRole()
         );
 
-        userRepository.save(user);
+        User saved = userRepository.save(user);
+        auditLogService.log(
+                owner,
+                AuditAction.COMPANY_USER_CREATED,
+                "USER",
+                saved.getId(),
+                "Company user created with role " + saved.getCompanyUserRole()
+        );
     }
 
     public List<CompanyUserResponse> getCompanyUsers(
@@ -88,7 +101,7 @@ public class CompanyUserService {
 
         User currentUserEntity = userRepository.findById(
                 currentUser.getId()
-        ).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        ).orElseThrow();
 
         return userRepository.findByCompanyId(
                         currentUserEntity.getCompany().getId()
@@ -110,9 +123,20 @@ public class CompanyUserService {
             CustomUserDetails currentUser
     ) {
 
+        deactivateCompanyUser(
+                userId,
+                currentUser
+        );
+    }
+
+    public void activateCompanyUser(
+            UUID userId,
+            CustomUserDetails currentUser
+    ) {
+
         User owner = userRepository.findById(
                 currentUser.getId()
-        ).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        ).orElseThrow();
 
         if (owner.getCompanyUserRole() != CompanyUserRole.OWNER) {
             throw new AccessDeniedException(
@@ -120,11 +144,11 @@ public class CompanyUserService {
             );
         }
 
-        User userToDelete = userRepository.findById(
+        User userToActivate = userRepository.findById(
                 userId
-        ).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        ).orElseThrow();
 
-        if (!userToDelete.getCompany().getId().equals(
+        if (!userToActivate.getCompany().getId().equals(
                 owner.getCompany().getId()
         )) {
             throw new AccessDeniedException(
@@ -132,7 +156,73 @@ public class CompanyUserService {
             );
         }
 
-        deactivateCompanyUser(userId, currentUser);
+        if (userToActivate.getCompanyUserRole() == CompanyUserRole.OWNER) {
+            throw new IllegalArgumentException(
+                    "Owner status cannot be changed"
+            );
+        }
+
+        userToActivate.setStatus(UserStatus.ACTIVE);
+
+        User saved = userRepository.save(userToActivate);
+        auditLogService.log(
+                owner,
+                AuditAction.COMPANY_USER_ACTIVATED,
+                "USER",
+                saved.getId(),
+                "Company user activated"
+        );
+    }
+
+    public void deactivateCompanyUser(
+            UUID userId,
+            CustomUserDetails currentUser
+    ) {
+
+        User owner = userRepository.findById(
+                currentUser.getId()
+        ).orElseThrow();
+
+        if (owner.getCompanyUserRole() != CompanyUserRole.OWNER) {
+            throw new AccessDeniedException(
+                    "Only owners can deactivate company users"
+            );
+        }
+
+        User userToDeactivate = userRepository.findById(
+                userId
+        ).orElseThrow();
+
+        if (!userToDeactivate.getCompany().getId().equals(
+                owner.getCompany().getId()
+        )) {
+            throw new AccessDeniedException(
+                    "User does not belong to your company"
+            );
+        }
+
+        if (userToDeactivate.getId().equals(owner.getId())) {
+            throw new IllegalArgumentException(
+                    "You cannot deactivate yourself"
+            );
+        }
+
+        if (userToDeactivate.getCompanyUserRole() == CompanyUserRole.OWNER) {
+            throw new IllegalArgumentException(
+                    "Owner cannot be deactivated"
+            );
+        }
+
+        userToDeactivate.setStatus(UserStatus.SUSPENDED);
+
+        User saved = userRepository.save(userToDeactivate);
+        auditLogService.log(
+                owner,
+                AuditAction.COMPANY_USER_DEACTIVATED,
+                "USER",
+                saved.getId(),
+                "Company user deactivated"
+        );
     }
 
     public void updateCompanyUserRole(
@@ -143,7 +233,7 @@ public class CompanyUserService {
 
         User owner = userRepository.findById(
                 currentUser.getId()
-        ).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        ).orElseThrow();
 
         if (owner.getCompanyUserRole() != CompanyUserRole.OWNER) {
             throw new AccessDeniedException(
@@ -153,7 +243,7 @@ public class CompanyUserService {
 
         User user = userRepository.findById(
                 userId
-        ).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        ).orElseThrow();
 
         if (!user.getCompany().getId().equals(
                 owner.getCompany().getId()
@@ -175,96 +265,19 @@ public class CompanyUserService {
             );
         }
 
+        CompanyUserRole previousRole = user.getCompanyUserRole();
+
         user.setCompanyUserRole(
                 request.getCompanyUserRole()
         );
 
-        userRepository.save(user);
-    }
-
-    public void activateCompanyUser(
-            UUID userId,
-            CustomUserDetails currentUser
-    ) {
-        User owner = requireOwner(currentUser);
-        User user = getCompanyUserForOwner(userId, owner);
-
-        if (user.getStatus() == UserStatus.ACTIVE) {
-            return;
-        }
-
-        subscriptionValidationService.validateUserLimit(
-                owner.getCompany()
+        User saved = userRepository.save(user);
+        auditLogService.log(
+                owner,
+                AuditAction.COMPANY_USER_ROLE_CHANGED,
+                "USER",
+                saved.getId(),
+                "Company user role changed from " + previousRole + " to " + saved.getCompanyUserRole()
         );
-
-        user.setStatus(UserStatus.ACTIVE);
-        userRepository.save(user);
-    }
-
-    public void deactivateCompanyUser(
-            UUID userId,
-            CustomUserDetails currentUser
-    ) {
-        User owner = requireOwner(currentUser);
-        User user = getCompanyUserForOwner(userId, owner);
-
-        if (user.getId().equals(owner.getId())) {
-            throw new IllegalArgumentException(
-                    "You cannot deactivate yourself"
-            );
-        }
-
-        if (user.getCompanyUserRole() == CompanyUserRole.OWNER) {
-            long activeOwners = userRepository
-                    .countByCompanyIdAndCompanyUserRoleAndStatus(
-                            owner.getCompany().getId(),
-                            CompanyUserRole.OWNER,
-                            UserStatus.ACTIVE
-                    );
-
-            if (activeOwners <= 1) {
-                throw new IllegalArgumentException(
-                        "Final owner cannot be deactivated"
-                );
-            }
-        }
-
-        user.setStatus(UserStatus.SUSPENDED);
-        userRepository.save(user);
-    }
-
-    private User requireOwner(
-            CustomUserDetails currentUser
-    ) {
-        User owner = userRepository.findById(
-                currentUser.getId()
-        ).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        if (owner.getCompanyUserRole() != CompanyUserRole.OWNER) {
-            throw new AccessDeniedException(
-                    "Only owners can manage company users"
-            );
-        }
-
-        return owner;
-    }
-
-    private User getCompanyUserForOwner(
-            UUID userId,
-            User owner
-    ) {
-        User user = userRepository.findById(
-                userId
-        ).orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        if (!user.getCompany().getId().equals(
-                owner.getCompany().getId()
-        )) {
-            throw new AccessDeniedException(
-                    "User does not belong to your company"
-            );
-        }
-
-        return user;
     }
 }

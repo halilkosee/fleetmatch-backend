@@ -1,6 +1,9 @@
 package com.fleetmatch.admin.service;
 
 import com.fleetmatch.admin.dto.PendingUserResponse;
+import com.fleetmatch.audit.entity.AuditAction;
+import com.fleetmatch.audit.service.AuditLogService;
+import com.fleetmatch.security.user.CustomUserDetails;
 import java.util.List;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.user.entity.User;
@@ -28,8 +31,9 @@ public class AdminService {
     private final CompanyRepository companyRepository;
     private final LoadRepository loadRepository;
     private final OfferRepository offerRepository;
+    private final AuditLogService auditLogService;
 
-    public void approveUser(UUID userId) {
+    public void approveUser(UUID userId, CustomUserDetails currentUser) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() ->
@@ -37,10 +41,17 @@ public class AdminService {
 
         user.setStatus(UserStatus.ACTIVE);
 
-        userRepository.save(user);
+        User saved = userRepository.save(user);
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.USER_APPROVED,
+                "USER",
+                saved.getId(),
+                "User approved"
+        );
     }
 
-    public void suspendUser(UUID userId) {
+    public void suspendUser(UUID userId, CustomUserDetails currentUser) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() ->
@@ -48,9 +59,14 @@ public class AdminService {
 
         user.setStatus(UserStatus.SUSPENDED);
 
-        userRepository.save(user);
-
-
+        User saved = userRepository.save(user);
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.USER_SUSPENDED,
+                "USER",
+                saved.getId(),
+                "User suspended"
+        );
     }
 
     public List<PendingUserResponse> getPendingUsers() {
@@ -107,5 +123,10 @@ public class AdminService {
                 loads,
                 offers
         );
+    }
+
+    private User getActor(CustomUserDetails currentUser) {
+        return userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("Admin user not found"));
     }
 }

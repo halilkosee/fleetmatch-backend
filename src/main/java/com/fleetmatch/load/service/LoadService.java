@@ -32,11 +32,11 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.UUID;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -173,6 +173,8 @@ public class LoadService {
             throw new AccessDeniedException("Only the broker company that owns this load can duplicate it");
         }
 
+        subscriptionValidationService.validateMonthlyLoadLimit(user.getCompany());
+
         Load duplicate = new Load();
         duplicate.setBrokerCompany(source.getBrokerCompany());
         duplicate.setCreatedBy(user);
@@ -193,7 +195,15 @@ public class LoadService {
         copyAdvancedFields(source, duplicate);
         duplicate.setStatus(LoadStatus.POSTED);
 
-        return toResponse(loadRepository.save(duplicate), user);
+        Load saved = loadRepository.save(duplicate);
+        auditLogService.log(
+                user,
+                AuditAction.LOAD_DUPLICATED,
+                "LOAD",
+                saved.getId(),
+                "Load duplicated from " + source.getId()
+        );
+        return toResponse(saved, user);
     }
 
     public Page<LoadResponse> getPostedLoads(

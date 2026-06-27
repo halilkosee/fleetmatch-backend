@@ -15,7 +15,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -25,8 +24,6 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-
-    private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
     @Operation(summary = "Register a new company owner")
@@ -102,10 +99,5 @@ public class AuthController {
     ) {
         authService.resetPassword(request);
         return new AuthResponse("Password reset");
-    }
-
-    @GetMapping("/debug/password")
-    public String debugPassword() {
-        return passwordEncoder.encode("123456");
     }
 }

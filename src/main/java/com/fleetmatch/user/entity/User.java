@@ -38,6 +38,13 @@ public class User extends BaseEntity {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
+    private int failedLoginAttempts;
+
+    private LocalDateTime lockedUntil;
+
+    private LocalDateTime credentialsChangedAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PlatformRole platformRole = PlatformRole.USER;

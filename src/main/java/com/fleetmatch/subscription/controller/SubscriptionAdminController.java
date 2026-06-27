@@ -2,8 +2,10 @@ package com.fleetmatch.subscription.controller;
 
 import com.fleetmatch.subscription.dto.*;
 import com.fleetmatch.subscription.service.SubscriptionService;
+import com.fleetmatch.security.user.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,23 +21,27 @@ public class SubscriptionAdminController {
 
     @PostMapping("/plans")
     public SubscriptionPlanResponse createPlan(
-            @RequestBody CreateSubscriptionPlanRequest request
+            @RequestBody CreateSubscriptionPlanRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
 
         return subscriptionService.createPlan(
-                request
+                request,
+                currentUser
         );
     }
 
     @PutMapping("/plans/{planId}")
     public SubscriptionPlanResponse updatePlan(
             @PathVariable UUID planId,
-            @RequestBody UpdateSubscriptionPlanRequest request
+            @RequestBody UpdateSubscriptionPlanRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
 
         return subscriptionService.updatePlan(
                 planId,
-                request
+                request,
+                currentUser
         );
     }
 
@@ -57,11 +63,12 @@ public class SubscriptionAdminController {
 
     @PostMapping("/assign")
     public CompanySubscriptionResponse assignPlanToCompany(
-            @RequestBody AssignSubscriptionRequest request
+            @RequestBody AssignSubscriptionRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
 
         return subscriptionService
-                .assignPlanToCompany(request);
+                .assignPlanToCompany(request, currentUser);
     }
 
     @GetMapping("/companies")
