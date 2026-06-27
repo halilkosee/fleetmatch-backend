@@ -69,6 +69,25 @@ public class AdminService {
         );
     }
 
+    public void unlockUser(UUID userId, CustomUserDetails currentUser) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        user.setFailedLoginAttempts(0);
+        user.setLockedUntil(null);
+
+        User saved = userRepository.save(user);
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.USER_UNLOCKED,
+                "USER",
+                saved.getId(),
+                "User account unlocked"
+        );
+    }
+
     public List<PendingUserResponse> getPendingUsers() {
 
         return userRepository.findByStatus(UserStatus.PENDING_VERIFICATION)
