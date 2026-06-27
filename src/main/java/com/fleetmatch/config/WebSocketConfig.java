@@ -1,9 +1,13 @@
 package com.fleetmatch.config;
 
-import com.fleetmatch.messaging.service.MessagingService;
+import com.fleetmatch.messaging.repository.ConversationRepository;
 import com.fleetmatch.security.jwt.JwtService;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.security.user.CustomUserDetailsService;
+import com.fleetmatch.user.entity.CompanyUserRole;
+import com.fleetmatch.user.entity.User;
+import com.fleetmatch.user.repository.UserRepository;
+import com.fleetmatch.user.service.UserVerificationGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -32,7 +36,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
-    private final MessagingService messagingService;
+    private final ConversationRepository conversationRepository;
+    private final UserRepository userRepository;
+    private final UserVerificationGuard userVerificationGuard;
 
     @Value("${fleetmatch.cors.allowed-origins}")
     private String allowedOrigins;
@@ -118,6 +124,37 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         UUID conversationId = UUID.fromString(
                 destination.substring("/topic/conversations/".length())
         );
-        messagingService.validateConversationAccess(conversationId, currentUser);
+        validateConversationAccess(conversationId, currentUser);
+    }
+
+    private void validateConversationAccess(
+            UUID conversationId,
+            CustomUserDetails currentUser
+    ) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new AccessDeniedException("User not found"));
+
+        if (user.getCompany() == null) {
+            throw new AccessDeniedException("Only company users can access conversations");
+        }
+
+        if (user.getCompanyUserRole() == CompanyUserRole.DRIVER) {
+            throw new AccessDeniedException("Drivers cannot use messaging");
+        }
+
+        userVerificationGuard.requireVerifiedForCoreWorkflow(user);
+
+        var conversation = conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new AccessDeniedException("Conversation not found"));
+
+        boolean participant =
+                conversation.getBrokerCompany().getId().equals(user.getCompany().getId()) ||
+                        conversation.getFleetCompany().getId().equals(user.getCompany().getId());
+
+        if (!participant) {
+            throw new AccessDeniedException(
+                    "You can only access conversations for your company"
+            );
+        }
     }
 }
