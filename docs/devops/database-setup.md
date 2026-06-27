@@ -4,11 +4,25 @@ Each environment must use a separate PostgreSQL database.
 
 | Environment | Database |
 | --- | --- |
-| LOCAL | `fleetmatch_local` |
+| LOCAL | `fleetmatch_local` recommended, `fleetmatch` supported for existing local setup |
 | DEV | `fleetmatch_dev` |
 | PROD | `fleetmatch_prod` |
 
 ## Local Database
+
+The current local profile reads `.env.local`. If `.env.local` is not present,
+the fallback values are:
+
+```text
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=fleetmatch
+DB_USERNAME=halil
+DB_PASSWORD=
+```
+
+For a fully isolated local database, set `.env.local` to `fleetmatch_local`
+and create the role/database below.
 
 Using Docker:
 
