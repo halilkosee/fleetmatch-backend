@@ -4,6 +4,7 @@ import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.messaging.dto.ConversationResponse;
+import com.fleetmatch.messaging.dto.ConversationStreamEvent;
 import com.fleetmatch.messaging.dto.CreateMessageRequest;
 import com.fleetmatch.messaging.dto.MessageResponse;
 import com.fleetmatch.messaging.entity.Conversation;
@@ -38,6 +39,7 @@ public class MessagingService {
     private final UserRepository userRepository;
     private final UserVerificationGuard userVerificationGuard;
     private final NotificationService notificationService;
+    private final ConversationRealtimeService conversationRealtimeService;
 
     @Transactional
     public Conversation createConversationForSelectedOffer(Offer offer) {
@@ -136,6 +138,14 @@ public class MessagingService {
         ).map(this::toMessageResponse);
     }
 
+    public void validateConversationAccess(
+            UUID conversationId,
+            CustomUserDetails currentUser
+    ) {
+        User user = getCurrentUser(currentUser);
+        getConversationForParticipant(conversationId, user);
+    }
+
     @Transactional
     public MessageResponse sendMessage(
             UUID conversationId,
@@ -178,6 +188,7 @@ public class MessagingService {
                 "CONVERSATION",
                 conversation.getId()
         );
+        publishConversationEvent("MESSAGE_CREATED", response);
 
         return response;
     }
@@ -223,9 +234,11 @@ public class MessagingService {
             message.setReadAt(LocalDateTime.now());
         }
 
-        return toMessageResponse(
+        MessageResponse response = toMessageResponse(
                 messageRepository.save(message)
         );
+        publishConversationEvent("MESSAGE_READ", response);
+        return response;
     }
 
     @Transactional
@@ -268,9 +281,11 @@ public class MessagingService {
 
         message.setDeletedAt(LocalDateTime.now());
 
-        return toMessageResponse(
+        MessageResponse response = toMessageResponse(
                 messageRepository.save(message)
         );
+        publishConversationEvent("MESSAGE_DELETED", response);
+        return response;
     }
 
     private Conversation getConversationForParticipant(
@@ -383,6 +398,21 @@ public class MessagingService {
                 message.getDeletedAt(),
                 message.getCreatedAt(),
                 message.getUpdatedAt()
+        );
+    }
+
+    private void publishConversationEvent(
+            String type,
+            MessageResponse response
+    ) {
+        conversationRealtimeService.publish(
+                response.getConversationId(),
+                new ConversationStreamEvent(
+                        type,
+                        response.getConversationId(),
+                        LocalDateTime.now(),
+                        response
+                )
         );
     }
 }
