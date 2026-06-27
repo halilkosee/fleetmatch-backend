@@ -143,6 +143,15 @@ public class OfferService {
     }
 
     @Transactional
+    public OfferResponse acceptOffer(
+            UUID loadId,
+            UUID offerId,
+            CustomUserDetails currentUser
+    ) {
+        return selectOffer(loadId, offerId, currentUser);
+    }
+
+    @Transactional
     public OfferResponse selectOffer(
             UUID loadId,
             UUID offerId,
