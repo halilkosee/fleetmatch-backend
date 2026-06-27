@@ -18,12 +18,209 @@ EasyFleetMatch backend has a working MVP core:
 - Local E2E and negative/security E2E scripts
 - DevOps profile, Docker, Nginx, and CI foundation
 
+The current architecture is still a good fit for the product stage:
+
+- Controllers expose REST and WebSocket endpoints.
+- Services own business rules and transactions.
+- Repositories stay persistence-focused.
+- DTOs keep entities from being exposed directly.
+- Flyway owns schema changes.
+
+No large redesign is recommended before beta. The next architectural improvement should be incremental event publishing for major business actions, not a rewrite.
+
 Local validation has passed for:
 
 - Backend compile
 - Happy path E2E
 - Negative/security E2E
 - WebSocket smoke test
+
+Latest local compile result:
+
+- `./mvnw -q -DskipTests compile` passed after the latest subscription and workflow locking changes.
+- Full test execution is currently environment-blocked in this sandbox because Maven cannot write to the host `.m2` cache, and the isolated workspace Maven cache cannot download missing artifacts without network access.
+
+## Module Review Summary
+
+### Authentication And Verification
+
+Implemented:
+
+- JWT login.
+- Email OTP verification.
+- Phone OTP verification.
+- Password reset OTP.
+- Strong password policy.
+- Failed login counter and temporary account lock.
+- Token invalidation after credential changes.
+
+Remaining risks:
+
+- Account unlock is not yet exposed as an admin operation.
+- Refresh token/session management is not implemented yet.
+- Rate limits are in-memory and must move to Redis before multi-instance DEV/PROD deployment.
+
+### Account Settings
+
+Implemented:
+
+- Current user profile endpoint.
+- First name and last name update.
+- Password change with current password.
+- Email change by OTP.
+- Phone change by OTP.
+
+Remaining risks:
+
+- User-facing settings UI is frontend work.
+- Admin support view for account verification state is still thin.
+
+### Company Settings And Company Users
+
+Implemented:
+
+- Company self-service settings for owner users.
+- Locked legal identity fields.
+- Company user create, activate, deactivate, and role change.
+- Self-deactivation and final-owner protections.
+- Company user subscription limit enforcement.
+
+Remaining risks:
+
+- Company suspension is not modeled yet.
+- Verification notes and document review outcomes are not operator-grade yet.
+
+### Subscription
+
+Implemented:
+
+- Subscription plans.
+- Company subscription assignment.
+- Limits for vehicles, users, monthly loads, visible loads, and offers where applicable.
+- Expired, future-dated, and inactive-plan subscriptions are now rejected for active business actions.
+
+Remaining risks:
+
+- No scheduled expiration notification job yet.
+- No explicit subscription status enum yet.
+- No billing provider integration yet.
+
+### Load And Offer Workflow
+
+Implemented:
+
+- DAT-aligned lifecycle.
+- Conversation starts after fleet selection.
+- Fleet confirm moves load to booked.
+- Fleet decline returns load to posted and archives conversation.
+- Remaining offers are rejected after confirmation.
+- Critical workflow transitions now use row locks.
+
+Remaining risks:
+
+- Idempotency keys are not implemented yet.
+- Admin override/inspection endpoints for loads and offers are incomplete.
+- Cancellation reason taxonomy exists only at a basic product level.
+
+### Messaging
+
+Implemented:
+
+- REST messaging.
+- WebSocket/STOMP endpoint.
+- Conversation access checks.
+- Archived conversation send prevention.
+- Message soft delete.
+- Read status and unread counts.
+- Notifications for new messages.
+
+Remaining risks:
+
+- WebSocket authorization should be retested after every deployment.
+- Future driver accounts must be blocked at both REST and WebSocket layers when that module is introduced.
+
+### Notifications
+
+Implemented:
+
+- Notification entity, repository, service, controller.
+- User/company scoped reads.
+- Unread count.
+- Mark one/read all.
+- Notifications for core load, offer, message, company, and subscription events.
+
+Remaining risks:
+
+- Notification preferences do not exist yet.
+- Broadcast notifications are not implemented.
+- Subscription expiring notification requires a scheduled job.
+
+### Audit Log
+
+Implemented:
+
+- Audit log entity, repository, service, admin endpoint.
+- Action, entity, actor, company, IP, and date-range filters.
+- Logs for core security, company, subscription, load, offer, messaging, and vehicle actions.
+
+Important product decision:
+
+- Audit log should track meaningful business actions, not every raw database column update.
+- If every database mutation must be tracked later, add a separate entity-history/change-data-capture mechanism. Do not overload the operator audit log with low-level noise.
+
+Remaining risks:
+
+- Admin audit screen is frontend work, but the backend endpoint exists.
+- Some future operator actions do not exist yet, so they cannot be audited yet.
+- Audit details are human-readable strings; later beta may need structured JSON details for easier filtering.
+
+### Dashboard
+
+Implemented:
+
+- Broker dashboard endpoint.
+- Fleet dashboard endpoint.
+- Basic admin dashboard endpoint.
+
+Remaining risks:
+
+- Admin dashboard needs production KPIs: revenue, growth, active subscriptions, pending verification volume, cancellation rate, delivered load volume.
+- Dashboard query tests should be added before beta sign-off.
+
+### Admin Operations
+
+Implemented:
+
+- User approve/suspend.
+- Company approve/reject.
+- Company document listing.
+- Company listing/detail.
+- Audit log search.
+- Basic dashboard.
+- Subscription administration.
+
+Remaining risks:
+
+- Admin console is not yet "no SQL required."
+- Missing operator endpoints are listed below under Admin Operations Console.
+
+### Production Readiness
+
+Implemented:
+
+- Profile separation.
+- Docker and compose foundation.
+- Nginx templates.
+- GitHub Actions build foundation.
+- Global API error response.
+- DB indexes through migrations.
+
+Remaining risks:
+
+- No monitoring/metrics stack yet.
+- No backup/restore runbook execution proof yet.
+- No request correlation id yet.
+- `open-in-view` should be reviewed before production.
 
 ## Audit Coverage Sprint
 
@@ -176,13 +373,36 @@ The backend still needs operator-grade endpoints for:
 
 ## Recommended Next Implementation Order
 
-1. Security hardening sprint
-2. Subscription lifecycle sprint
-3. Workflow concurrency sprint
-4. Admin operations console sprint
-5. Admin dashboard and reporting sprint
-6. Production operations sprint
+1. Admin operations console sprint
+2. Admin dashboard and reporting sprint
+3. Redis-backed rate limiting sprint
+4. Production operations sprint
+5. Subscription expiration notification sprint
+6. Idempotent workflow endpoints sprint
 7. Event-driven workflow foundation sprint
+
+## Next Backend Sprint Recommendation
+
+Start with Admin Operations Console.
+
+Reason:
+
+- The MVP workflow is working.
+- The audit and notification foundations exist.
+- The biggest beta-readiness gap is operator control.
+- The platform should not require direct SQL for normal support tasks.
+
+Recommended scope for the next sprint:
+
+- Add company suspend/reactivate endpoints.
+- Add admin account unlock endpoint.
+- Add admin load inspection endpoint.
+- Add admin offer inspection endpoint.
+- Add admin conversation inspection endpoint.
+- Add verification notes for company approval/rejection.
+- Ensure each operator action writes an audit log.
+
+Keep this sprint backend-only. The frontend can consume these endpoints later for the Admin Console.
 
 ## Principle
 
