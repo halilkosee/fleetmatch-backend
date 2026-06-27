@@ -1,5 +1,6 @@
 package com.fleetmatch.admin.controller;
 
+import com.fleetmatch.admin.dto.AdminCompanyStatusRequest;
 import com.fleetmatch.admin.dto.AdminDashboardResponse;
 import com.fleetmatch.admin.dto.PendingUserResponse;
 import com.fleetmatch.admin.service.AdminService;
@@ -11,6 +12,7 @@ import com.fleetmatch.company.document.service.CompanyDocumentService;
 import com.fleetmatch.company.dto.CompanyResponse;
 import com.fleetmatch.company.dto.PendingCompanyResponse;
 import com.fleetmatch.company.service.CompanyService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -53,6 +55,15 @@ public class AdminController {
     ) {
         adminService.suspendUser(userId, currentUser);
         return "User suspended";
+    }
+
+    @PutMapping("/users/{userId}/unlock")
+    public String unlockUser(
+            @PathVariable UUID userId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        adminService.unlockUser(userId, currentUser);
+        return "User unlocked";
     }
 
     @GetMapping("/users/pending")
@@ -99,6 +110,34 @@ public class AdminController {
     ) {
         companyService.rejectCompany(companyId, currentUser);
         return "Company rejected";
+    }
+
+    @PatchMapping("/companies/{companyId}/suspend")
+    public String suspendCompany(
+            @PathVariable UUID companyId,
+            @Valid @RequestBody(required = false) AdminCompanyStatusRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        companyService.suspendCompany(
+                companyId,
+                request == null ? null : request.getNotes(),
+                currentUser
+        );
+        return "Company suspended";
+    }
+
+    @PatchMapping("/companies/{companyId}/reactivate")
+    public String reactivateCompany(
+            @PathVariable UUID companyId,
+            @Valid @RequestBody(required = false) AdminCompanyStatusRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        companyService.reactivateCompany(
+                companyId,
+                request == null ? null : request.getNotes(),
+                currentUser
+        );
+        return "Company reactivated";
     }
 
     @GetMapping("/companies/pending")
