@@ -97,10 +97,10 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
 
         if ("/api/auth/login".equals(path)) {
-            return new Rule("login", 5, 60_000, false, false);
+            return new Rule("login", 5, 60_000, false, true);
         }
         if ("/api/auth/register".equals(path)) {
-            return new Rule("register", 5, 60_000, false, false);
+            return new Rule("register", 20, 60_000, false, false);
         }
         if (path.contains("resend") || path.contains("change-email/request") ||
                 path.contains("change-phone/request") || path.contains("forgot-password")) {
