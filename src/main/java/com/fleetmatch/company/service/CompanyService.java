@@ -87,6 +87,66 @@ public class CompanyService {
         auditLogService.log(getActor(currentUser), AuditAction.COMPANY_REJECTED, "COMPANY", company.getId(), "Company rejected");
     }
 
+    public void suspendCompany(
+            UUID companyId,
+            String notes,
+            CustomUserDetails currentUser
+    ) {
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+
+        company.setVerificationStatus(CompanyVerificationStatus.SUSPENDED);
+        company.setVerificationNotes(notes);
+
+        companyRepository.save(company);
+        notificationService.createForCompany(
+                company,
+                NotificationType.COMPANY_SUSPENDED,
+                "Company suspended",
+                "Your company has been suspended by EasyFleetMatch operations",
+                "COMPANY",
+                company.getId()
+        );
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.COMPANY_SUSPENDED,
+                "COMPANY",
+                company.getId(),
+                details("Company suspended", notes)
+        );
+    }
+
+    public void reactivateCompany(
+            UUID companyId,
+            String notes,
+            CustomUserDetails currentUser
+    ) {
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+
+        company.setVerificationStatus(CompanyVerificationStatus.APPROVED);
+        company.setVerificationNotes(notes);
+
+        companyRepository.save(company);
+        notificationService.createForCompany(
+                company,
+                NotificationType.COMPANY_REACTIVATED,
+                "Company reactivated",
+                "Your company has been reactivated",
+                "COMPANY",
+                company.getId()
+        );
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.COMPANY_REACTIVATED,
+                "COMPANY",
+                company.getId(),
+                details("Company reactivated", notes)
+        );
+    }
+
     public List<PendingCompanyResponse> getPendingCompanies() {
 
         return companyRepository.findByVerificationStatusIn(List.of(
@@ -255,5 +315,13 @@ public class CompanyService {
 
         return userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private String details(String action, String notes) {
+        if (notes == null || notes.isBlank()) {
+            return action;
+        }
+
+        return action + ": " + notes;
     }
 }
