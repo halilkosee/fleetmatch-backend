@@ -49,4 +49,7 @@ public class Company extends BaseEntity {
 
     @Column(length = 100)
     private String dotNumber;
+
+    @Column(length = 2000)
+    private String verificationNotes;
 }
