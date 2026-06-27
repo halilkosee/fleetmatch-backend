@@ -109,6 +109,23 @@ This is the backend foundation for an Admin Audit Logs screen.
 - Tokens issued before `credentialsChangedAt` are rejected.
 - Password change, password reset, and verified email change update `credentialsChangedAt`.
 
+## Subscription Lifecycle Sprint
+
+### Added Subscription Usability Checks
+
+- Active business actions now reject expired subscriptions.
+- Future-dated subscriptions are not usable before their start date.
+- Inactive subscription plans are not usable even if a company subscription row is active.
+- Existing subscription limit logic remains centralized in `SubscriptionAccessService`.
+
+## Workflow Concurrency Sprint
+
+### Added Critical Row Locking
+
+- Offer selection, confirmation, and decline now use pessimistic locking on the offer/load row path.
+- Load start, delivery, and cancellation now run inside transactions and lock the load row before status validation.
+- This reduces double-select, double-confirm, and conflicting status transition risk without changing public APIs.
+
 ## Remaining High-Priority Gaps
 
 ### Security Hardening
@@ -119,15 +136,12 @@ This is the backend foundation for an Admin Audit Logs screen.
 
 ### Subscription Lifecycle
 
-- Enforce subscription `endDate`.
 - Define expired subscription behavior.
 - Add subscription status model if needed.
 - Add scheduled notification for subscription expiration.
 
 ### Workflow Concurrency
 
-- Add optimistic or pessimistic locking around offer selection and confirmation.
-- Prevent double-select or double-confirm race conditions at database level.
 - Consider idempotency for selected workflow endpoints.
 
 ### Admin Operations Console

@@ -5,9 +5,11 @@ import com.fleetmatch.offer.entity.OfferStatus;
 import com.fleetmatch.load.entity.LoadStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,6 +27,10 @@ public interface OfferRepository extends JpaRepository<Offer, UUID> {
             UUID loadId,
             OfferStatus status
     );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select o from Offer o join fetch o.load where o.id = :offerId")
+    Optional<Offer> findByIdWithLoadForUpdate(UUID offerId);
 
     boolean existsByLoadIdAndFleetUserId(
             UUID loadId,

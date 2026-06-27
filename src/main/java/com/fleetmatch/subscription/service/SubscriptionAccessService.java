@@ -1,11 +1,13 @@
 package com.fleetmatch.subscription.service;
 
+import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.subscription.entity.CompanySubscription;
 import com.fleetmatch.subscription.repository.CompanySubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Service
@@ -137,9 +139,38 @@ public class SubscriptionAccessService {
                 .findByCompanyIdAndActiveTrue(
                         companyId
                 )
+                .map(this::requireUsableSubscription)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "No active subscription found"
                         ));
+    }
+
+    private CompanySubscription requireUsableSubscription(
+            CompanySubscription subscription
+    ) {
+        LocalDate today = LocalDate.now();
+
+        if (Boolean.FALSE.equals(subscription.getSubscriptionPlan().getActive())) {
+            throw new BusinessRuleException(
+                    "Current subscription plan is not active"
+            );
+        }
+
+        if (subscription.getStartDate() != null &&
+                subscription.getStartDate().isAfter(today)) {
+            throw new BusinessRuleException(
+                    "Subscription is not active yet"
+            );
+        }
+
+        if (subscription.getEndDate() != null &&
+                subscription.getEndDate().isBefore(today)) {
+            throw new BusinessRuleException(
+                    "Subscription has expired"
+            );
+        }
+
+        return subscription;
     }
 }

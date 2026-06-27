@@ -45,6 +45,7 @@ public class OfferService {
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
 
+    @Transactional
     public OfferResponse createOffer(
             UUID loadId,
             CreateOfferRequest request,
@@ -166,7 +167,7 @@ public class OfferService {
             throw new AccessDeniedException("Only brokers can select offers");
         }
 
-        Offer offer = offerRepository.findById(offerId)
+        Offer offer = offerRepository.findByIdWithLoadForUpdate(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
 
         if (!offer.getLoad().getId().equals(loadId)) {
@@ -231,7 +232,7 @@ public class OfferService {
             throw new AccessDeniedException("Only fleets can confirm assignments");
         }
 
-        Offer offer = offerRepository.findById(offerId)
+        Offer offer = offerRepository.findByIdWithLoadForUpdate(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
 
         if (!offer.getLoad().getId().equals(loadId)) {
@@ -320,7 +321,7 @@ public class OfferService {
             throw new AccessDeniedException("Only fleets can decline assignments");
         }
 
-        Offer offer = offerRepository.findById(offerId)
+        Offer offer = offerRepository.findByIdWithLoadForUpdate(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
 
         if (!offer.getLoad().getId().equals(loadId)) {

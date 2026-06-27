@@ -313,13 +313,14 @@ public class LoadService {
                 .toList();
     }
 
+    @Transactional
     public LoadResponse startLoad(UUID loadId, CustomUserDetails currentUser) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         userVerificationGuard.requireVerifiedForCoreWorkflow(user);
 
-        Load load = loadRepository.findById(loadId)
+        Load load = loadRepository.findByIdForUpdate(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
 
         if (load.getStatus() != LoadStatus.BOOKED) {
@@ -357,13 +358,14 @@ public class LoadService {
         );
     }
 
+    @Transactional
     public LoadResponse deliverLoad(UUID loadId, CustomUserDetails currentUser) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         userVerificationGuard.requireVerifiedForCoreWorkflow(user);
 
-        Load load = loadRepository.findById(loadId)
+        Load load = loadRepository.findByIdForUpdate(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
 
         if (load.getStatus() != LoadStatus.IN_TRANSIT) {
@@ -401,11 +403,12 @@ public class LoadService {
         );
     }
 
+    @Transactional
     public LoadResponse cancelLoad(UUID loadId, CustomUserDetails currentUser) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        Load load = loadRepository.findById(loadId)
+        Load load = loadRepository.findByIdForUpdate(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
 
         if (load.getStatus() == LoadStatus.IN_TRANSIT ||
