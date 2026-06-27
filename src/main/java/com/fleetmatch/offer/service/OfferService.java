@@ -2,12 +2,17 @@ package com.fleetmatch.offer.service;
 
 import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
+import com.fleetmatch.audit.entity.AuditAction;
+import com.fleetmatch.audit.service.AuditLogService;
 import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.load.entity.Load;
 import com.fleetmatch.load.entity.LoadStatus;
 import com.fleetmatch.load.repository.LoadRepository;
+import com.fleetmatch.messaging.entity.Conversation;
 import com.fleetmatch.messaging.service.MessagingService;
+import com.fleetmatch.notification.entity.NotificationType;
+import com.fleetmatch.notification.service.NotificationService;
 import com.fleetmatch.offer.dto.CreateOfferRequest;
 import com.fleetmatch.offer.dto.OfferResponse;
 import com.fleetmatch.offer.entity.Offer;
@@ -17,6 +22,7 @@ import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.subscription.service.SubscriptionValidationService;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.repository.UserRepository;
+import com.fleetmatch.user.service.UserVerificationGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -35,6 +41,9 @@ public class OfferService {
     private final SubscriptionValidationService
             subscriptionValidationService;
     private final MessagingService messagingService;
+    private final UserVerificationGuard userVerificationGuard;
+    private final NotificationService notificationService;
+    private final AuditLogService auditLogService;
 
     public OfferResponse createOffer(
             UUID loadId,
@@ -43,6 +52,8 @@ public class OfferService {
     ) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        userVerificationGuard.requireVerifiedForCoreWorkflow(user);
 
         if (user.getCompany() == null ||
                 user.getCompany().getType() != CompanyType.FLEET) {
@@ -56,7 +67,7 @@ public class OfferService {
                 != CompanyVerificationStatus.APPROVED) {
 
             throw new AccessDeniedException(
-                    "Company must be approved before submitting offers"
+                    "Company must be verified before submitting offers"
             );
         }
 
@@ -92,6 +103,15 @@ public class OfferService {
         offer.setMessage(request.getMessage());
 
         Offer saved = offerRepository.save(offer);
+        notificationService.createForCompany(
+                load.getBrokerCompany(),
+                NotificationType.NEW_OFFER,
+                "New offer",
+                "A fleet submitted an offer for your load",
+                "OFFER",
+                saved.getId()
+        );
+        auditLogService.log(user, AuditAction.OFFER_SUBMITTED, "OFFER", saved.getId(), "Offer submitted");
 
         return toResponse(saved);
     }
@@ -102,6 +122,8 @@ public class OfferService {
     ) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        userVerificationGuard.requireVerifiedForCoreWorkflow(user);
 
         if (user.getCompany() == null || user.getCompany().getType() != CompanyType.BROKER) {
             throw new AccessDeniedException("Only brokers can view offers");
@@ -121,15 +143,6 @@ public class OfferService {
     }
 
     @Transactional
-    public OfferResponse acceptOffer(
-            UUID loadId,
-            UUID offerId,
-            CustomUserDetails currentUser
-    ) {
-        return selectOffer(loadId, offerId, currentUser);
-    }
-
-    @Transactional
     public OfferResponse selectOffer(
             UUID loadId,
             UUID offerId,
@@ -137,6 +150,8 @@ public class OfferService {
     ) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        userVerificationGuard.requireVerifiedForCoreWorkflow(user);
 
         if (user.getCompany() == null || user.getCompany().getType() != CompanyType.BROKER) {
             throw new AccessDeniedException("Only brokers can select offers");
@@ -152,7 +167,7 @@ public class OfferService {
         Load load = offer.getLoad();
 
         if (!load.getBrokerCompany().getId().equals(user.getCompany().getId())) {
-            throw new AccessDeniedException("You can only select offers for your own loads");
+            throw new AccessDeniedException("You can only accept offers for your own loads");
         }
 
         if (offer.getStatus() != OfferStatus.PENDING) {
@@ -167,9 +182,26 @@ public class OfferService {
         load.setStatus(LoadStatus.AWAITING_FLEET_CONFIRMATION);
 
         loadRepository.save(load);
+
         Offer saved = offerRepository.save(offer);
 
-        messagingService.createConversationForSelectedOffer(saved);
+        Conversation conversation = messagingService.createConversationForSelectedOffer(saved);
+        auditLogService.log(
+                user,
+                AuditAction.CONVERSATION_CREATED,
+                "CONVERSATION",
+                conversation.getId(),
+                "Conversation opened for selected offer"
+        );
+        notificationService.createForCompany(
+                saved.getFleetUser().getCompany(),
+                NotificationType.OFFER_ACCEPTED,
+                "Offer selected",
+                "Your offer was selected by the broker",
+                "OFFER",
+                saved.getId()
+        );
+        auditLogService.log(user, AuditAction.OFFER_ACCEPTED, "OFFER", saved.getId(), "Offer selected");
 
         return toResponse(saved);
     }
@@ -182,6 +214,8 @@ public class OfferService {
     ) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        userVerificationGuard.requireVerifiedForCoreWorkflow(user);
 
         if (user.getCompany() == null ||
                 user.getCompany().getType() != CompanyType.FLEET) {
@@ -198,32 +232,55 @@ public class OfferService {
         if (!offer.getFleetUser().getCompany().getId().equals(
                 user.getCompany().getId()
         )) {
-            throw new AccessDeniedException("You can only confirm your own fleet assignment");
+            throw new AccessDeniedException("You can only confirm your own assignment");
         }
 
         Load load = offer.getLoad();
 
-        if (offer.getStatus() != OfferStatus.SELECTED ||
-                load.getStatus() != LoadStatus.AWAITING_FLEET_CONFIRMATION) {
-            throw new BusinessRuleException("Only selected assignments can be confirmed");
+        if (offer.getStatus() != OfferStatus.SELECTED) {
+            throw new BusinessRuleException("Only selected offers can be confirmed");
+        }
+
+        if (load.getStatus() != LoadStatus.AWAITING_FLEET_CONFIRMATION) {
+            throw new BusinessRuleException("Load is not awaiting fleet confirmation");
         }
 
         offer.setStatus(OfferStatus.CONFIRMED);
         load.setStatus(LoadStatus.BOOKED);
 
-        List<Offer> pendingOffers = offerRepository.findByLoadIdAndStatus(
+        List<Offer> otherOffers = offerRepository.findByLoadIdAndStatus(
                 load.getId(),
                 OfferStatus.PENDING
         );
 
-        for (Offer pendingOffer : pendingOffers) {
-            pendingOffer.setStatus(OfferStatus.REJECTED);
+        for (Offer otherOffer : otherOffers) {
+            if (!otherOffer.getId().equals(offer.getId())) {
+                otherOffer.setStatus(OfferStatus.REJECTED);
+                notificationService.createForCompany(
+                        otherOffer.getFleetUser().getCompany(),
+                        NotificationType.OFFER_REJECTED,
+                        "Offer rejected",
+                        "Another fleet was confirmed for this load",
+                        "OFFER",
+                        otherOffer.getId()
+                );
+            }
         }
 
         loadRepository.save(load);
-        offerRepository.saveAll(pendingOffers);
+        offerRepository.saveAll(otherOffers);
 
-        return toResponse(offerRepository.save(offer));
+        Offer saved = offerRepository.save(offer);
+        notificationService.createForCompany(
+                load.getBrokerCompany(),
+                NotificationType.FLEET_CONFIRMED,
+                "Fleet confirmed",
+                "Fleet confirmed the assignment",
+                "LOAD",
+                load.getId()
+        );
+
+        return toResponse(saved);
     }
 
     @Transactional
@@ -250,24 +307,35 @@ public class OfferService {
         if (!offer.getFleetUser().getCompany().getId().equals(
                 user.getCompany().getId()
         )) {
-            throw new AccessDeniedException("You can only decline your own fleet assignment");
+            throw new AccessDeniedException("You can only decline your own assignment");
         }
 
         Load load = offer.getLoad();
 
-        if (offer.getStatus() != OfferStatus.SELECTED ||
-                load.getStatus() != LoadStatus.AWAITING_FLEET_CONFIRMATION) {
-            throw new BusinessRuleException("Only selected assignments can be declined");
+        if (offer.getStatus() != OfferStatus.SELECTED) {
+            throw new BusinessRuleException("Only selected offers can be declined");
+        }
+
+        if (load.getStatus() != LoadStatus.AWAITING_FLEET_CONFIRMATION) {
+            throw new BusinessRuleException("Load is not awaiting fleet confirmation");
         }
 
         offer.setStatus(OfferStatus.REJECTED);
         load.setStatus(LoadStatus.POSTED);
 
         loadRepository.save(load);
-        Offer saved = offerRepository.save(offer);
-        messagingService.archiveConversationForLoad(load.getId());
+        messagingService.archiveConversation(load.getId());
+        notificationService.createForCompany(
+                load.getBrokerCompany(),
+                NotificationType.OFFER_REJECTED,
+                "Fleet declined",
+                "Selected fleet declined the assignment",
+                "OFFER",
+                offer.getId()
+        );
+        auditLogService.log(user, AuditAction.OFFER_REJECTED, "OFFER", offer.getId(), "Offer declined");
 
-        return toResponse(saved);
+        return toResponse(offerRepository.save(offer));
     }
 
     private OfferResponse toResponse(Offer offer) {
