@@ -323,6 +323,23 @@ This is the backend foundation for an Admin Audit Logs screen.
 - Load start, delivery, and cancellation now run inside transactions and lock the load row before status validation.
 - This reduces double-select, double-confirm, and conflicting status transition risk without changing public APIs.
 
+## Admin Operations Sprint
+
+### Added Operator Actions
+
+- Admins can unlock temporarily locked user accounts.
+- Admins can suspend companies.
+- Admins can reactivate suspended companies.
+- Company suspension stores optional verification/operation notes.
+- Company suspension and reactivation create notifications for the affected company.
+- User unlock, company suspension, and company reactivation create audit logs.
+
+### Product Behavior
+
+- Suspended companies are no longer `APPROVED`.
+- Existing core workflow checks already require company approval before load creation and offer submission.
+- This means suspended companies are blocked from active marketplace operations without changing the public load or offer APIs.
+
 ## Remaining High-Priority Gaps
 
 ### Security Hardening
@@ -345,8 +362,6 @@ This is the backend foundation for an Admin Audit Logs screen.
 
 The backend still needs operator-grade endpoints for:
 
-- Company suspension
-- Verification notes
 - Admin load inspection and cancellation
 - Admin offer inspection and cancellation
 - Conversation inspection
