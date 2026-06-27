@@ -3,6 +3,7 @@ package com.fleetmatch.notification.entity;
 public enum NotificationType {
     NEW_OFFER,
     OFFER_ACCEPTED,
+    OFFER_REJECTED,
     FLEET_CONFIRMED,
     NEW_MESSAGE,
     LOAD_STARTED,
