@@ -73,6 +73,31 @@ Successful output ends with:
 NEGATIVE E2E PASSED
 ```
 
+## WebSocket Messaging Smoke Test
+
+The bash E2E scripts validate REST messaging. Use this script after the happy
+path E2E creates a conversation to validate STOMP/WebSocket publishing.
+
+Use a broker or fleet JWT that belongs to the conversation:
+
+```bash
+TOKEN=<broker-or-fleet-jwt> \
+CONVERSATION_ID=<conversation-id-from-e2e-output> \
+BASE_URL=http://localhost:8080 \
+node scripts/e2e/websocket_smoke.js
+```
+
+Successful output ends with:
+
+```text
+WEBSOCKET E2E PASSED
+```
+
+The script connects to `/ws`, subscribes to
+`/topic/conversations/{conversationId}`, sends a message to
+`/app/conversations/{conversationId}/messages`, and expects the message event
+to be published back to the topic.
+
 ## Optional Variables
 
 ```bash
@@ -106,3 +131,4 @@ bash scripts/e2e/backend_negative_e2e.sh
 - Use a non-production database.
 - The scripts assign the `PRO` plan where needed to exercise offer and load workflows.
 - The negative script intentionally expects HTTP `400` or `403` responses for blocked actions.
+- The WebSocket smoke test requires Node.js with global `WebSocket` support, such as Node 22+.
