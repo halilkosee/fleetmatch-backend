@@ -29,7 +29,6 @@ import com.fleetmatch.company.dto.CompanyResponse;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -294,6 +293,15 @@ public class CompanyService {
                 company.getVerificationStatus(),
                 company.getMcNumber(),
                 company.getDotNumber(),
+                company.getEntityType(),
+                company.getEin(),
+                company.getStateOfFormation(),
+                company.getHeadquarters(),
+                company.getPrimaryContact(),
+                company.getAuthorityStatus(),
+                company.getBrokerBondOrTrust(),
+                company.getInsuranceCoverage(),
+                company.getOperatingRegions(),
                 company.getPhone(),
                 company.getWebsite(),
                 company.getDbaName(),
@@ -321,16 +329,17 @@ public class CompanyService {
 
         ensureOnboardingEditable(user, company);
 
-        if (request.getMcNumber() != null &&
-                !Objects.equals(request.getMcNumber(), company.getMcNumber())) {
-            throw new BusinessRuleException("MC number cannot be updated directly");
-        }
-
-        if (request.getDotNumber() != null &&
-                !Objects.equals(request.getDotNumber(), company.getDotNumber())) {
-            throw new BusinessRuleException("DOT number cannot be updated directly");
-        }
-
+        company.setMcNumber(request.getMcNumber());
+        company.setDotNumber(request.getDotNumber());
+        company.setEntityType(request.getEntityType());
+        company.setEin(request.getEin());
+        company.setStateOfFormation(request.getStateOfFormation());
+        company.setHeadquarters(request.getHeadquarters());
+        company.setPrimaryContact(request.getPrimaryContact());
+        company.setAuthorityStatus(request.getAuthorityStatus());
+        company.setBrokerBondOrTrust(request.getBrokerBondOrTrust());
+        company.setInsuranceCoverage(request.getInsuranceCoverage());
+        company.setOperatingRegions(request.getOperatingRegions());
         company.setPhone(request.getPhone());
         company.setWebsite(request.getWebsite());
         company.setDbaName(request.getDbaName());
@@ -357,6 +366,15 @@ public class CompanyService {
                 saved.getVerificationStatus(),
                 saved.getMcNumber(),
                 saved.getDotNumber(),
+                saved.getEntityType(),
+                saved.getEin(),
+                saved.getStateOfFormation(),
+                saved.getHeadquarters(),
+                saved.getPrimaryContact(),
+                saved.getAuthorityStatus(),
+                saved.getBrokerBondOrTrust(),
+                saved.getInsuranceCoverage(),
+                saved.getOperatingRegions(),
                 saved.getPhone(),
                 saved.getWebsite(),
                 saved.getDbaName(),
@@ -429,6 +447,15 @@ public class CompanyService {
                 company.getVerificationStatus(),
                 company.getMcNumber(),
                 company.getDotNumber(),
+                company.getEntityType(),
+                company.getEin(),
+                company.getStateOfFormation(),
+                company.getHeadquarters(),
+                company.getPrimaryContact(),
+                company.getAuthorityStatus(),
+                company.getBrokerBondOrTrust(),
+                company.getInsuranceCoverage(),
+                company.getOperatingRegions(),
                 company.getPhone(),
                 company.getWebsite(),
                 company.getDbaName(),

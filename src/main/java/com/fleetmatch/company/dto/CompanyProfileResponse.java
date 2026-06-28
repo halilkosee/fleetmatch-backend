@@ -23,6 +23,24 @@ public class CompanyProfileResponse {
 
     private String dotNumber;
 
+    private String entityType;
+
+    private String ein;
+
+    private String stateOfFormation;
+
+    private String headquarters;
+
+    private String primaryContact;
+
+    private String authorityStatus;
+
+    private String brokerBondOrTrust;
+
+    private String insuranceCoverage;
+
+    private String operatingRegions;
+
     private String phone;
 
     private String website;

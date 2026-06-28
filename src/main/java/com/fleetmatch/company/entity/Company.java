@@ -18,10 +18,25 @@ public class Company extends BaseEntity {
 
     private String dbaName;
 
+    @Column(length = 100)
+    private String entityType;
+
+    @Column(length = 50)
+    private String ein;
+
+    @Column(length = 100)
+    private String stateOfFormation;
+
+    @Column(length = 255)
+    private String headquarters;
+
     @Column(nullable = false, unique = true)
     private String email;
 
     private String phone;
+
+    @Column(length = 255)
+    private String primaryContact;
 
     @Column(length = 255)
     private String website;
@@ -49,6 +64,18 @@ public class Company extends BaseEntity {
 
     @Column(length = 100)
     private String dotNumber;
+
+    @Column(length = 100)
+    private String authorityStatus;
+
+    @Column(length = 100)
+    private String brokerBondOrTrust;
+
+    @Column(length = 100)
+    private String insuranceCoverage;
+
+    @Column(length = 1000)
+    private String operatingRegions;
 
     @Column(length = 2000)
     private String verificationNotes;
