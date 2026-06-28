@@ -11,6 +11,7 @@ import com.fleetmatch.offer.repository.OfferRepository;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.repository.UserRepository;
+import com.fleetmatch.user.service.UserVerificationGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -22,9 +23,11 @@ public class DashboardService {
     private final UserRepository userRepository;
     private final LoadRepository loadRepository;
     private final OfferRepository offerRepository;
+    private final UserVerificationGuard userVerificationGuard;
 
     public BrokerDashboardResponse brokerDashboard(CustomUserDetails currentUser) {
         User user = getCurrentUser(currentUser);
+        userVerificationGuard.requireMarketplaceAccess(user);
         if (user.getCompany() == null || user.getCompany().getType() != CompanyType.BROKER) {
             throw new AccessDeniedException("Only broker companies can access broker dashboard");
         }
@@ -51,6 +54,7 @@ public class DashboardService {
 
     public FleetDashboardResponse fleetDashboard(CustomUserDetails currentUser) {
         User user = getCurrentUser(currentUser);
+        userVerificationGuard.requireMarketplaceAccess(user);
         if (user.getCompany() == null || user.getCompany().getType() != CompanyType.FLEET) {
             throw new AccessDeniedException("Only fleet companies can access fleet dashboard");
         }

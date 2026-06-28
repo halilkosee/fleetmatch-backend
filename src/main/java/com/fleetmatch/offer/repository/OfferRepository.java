@@ -18,6 +18,8 @@ public interface OfferRepository extends JpaRepository<Offer, UUID> {
 
     List<Offer> findByLoadId(UUID loadId);
 
+    long countByLoadId(UUID loadId);
+
     List<Offer> findByLoadIdAndStatus(
             UUID loadId,
             OfferStatus status

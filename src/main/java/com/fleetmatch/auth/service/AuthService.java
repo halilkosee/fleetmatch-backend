@@ -91,7 +91,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setCredentialsChangedAt(LocalDateTime.now());
         user.setPlatformRole(PlatformRole.USER);
-        user.setStatus(UserStatus.PENDING_VERIFICATION);
+        user.setStatus(UserStatus.REGISTERED);
         user.setCompany(company);
         user.setCompanyUserRole(
                 CompanyUserRole.OWNER
@@ -145,9 +145,9 @@ public class AuthService {
             throw new BadCredentialsException("Invalid credentials");
         }
 
-        if (user.getStatus() != UserStatus.ACTIVE) {
+        if (user.getStatus() == UserStatus.SUSPENDED) {
             throw new AccountNotActiveException(
-                    "Account is pending verification"
+                    "Account is suspended"
             );
         }
 
@@ -174,6 +174,10 @@ public class AuthService {
 
         user.setEmailVerified(true);
         user.setEmailVerifiedAt(LocalDateTime.now());
+        if (user.getStatus() == UserStatus.REGISTERED ||
+                user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            user.setStatus(UserStatus.EMAIL_VERIFIED);
+        }
         userRepository.save(user);
         auditLogService.log(user, AuditAction.EMAIL_VERIFIED, "USER", user.getId(), "Email verified");
     }
@@ -206,6 +210,12 @@ public class AuthService {
 
         user.setPhoneVerified(true);
         user.setPhoneVerifiedAt(LocalDateTime.now());
+        if (user.isEmailVerified() &&
+                user.getStatus() != UserStatus.IN_REVIEW &&
+                user.getStatus() != UserStatus.APPROVED &&
+                user.getStatus() != UserStatus.ACTIVE) {
+            user.setStatus(UserStatus.PHONE_VERIFIED);
+        }
         userRepository.save(user);
         auditLogService.log(user, AuditAction.PHONE_VERIFIED, "USER", user.getId(), "Phone verified");
     }

@@ -44,7 +44,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             var userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(email);
 
-            if (userDetails.getUser().getStatus() != UserStatus.ACTIVE ||
+            if (userDetails.getUser().getStatus() == UserStatus.SUSPENDED ||
                     !jwtService.isTokenValidForUser(token, userDetails.getUser())) {
                 filterChain.doFilter(request, response);
                 return;

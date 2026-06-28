@@ -10,4 +10,6 @@ public interface CompanyDocumentRepository
         extends JpaRepository<CompanyDocument, UUID> {
 
     List<CompanyDocument> findByCompanyId(UUID companyId);
+
+    boolean existsByCompanyId(UUID companyId);
 }

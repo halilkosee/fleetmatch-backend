@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;
+import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
 import org.springframework.security.access.AccessDeniedException;
 
@@ -78,6 +79,14 @@ public class CompanyDocumentService {
         document.setFileUrl(request.getFileUrl());
 
         CompanyDocument saved = companyDocumentRepository.save(document);
+
+        if (user.getPlatformRole() != PlatformRole.ADMIN &&
+                user.getStatus() != UserStatus.APPROVED &&
+                user.getStatus() != UserStatus.ACTIVE &&
+                user.getStatus() != UserStatus.SUSPENDED) {
+            user.setStatus(UserStatus.DOCUMENTS_PENDING);
+            userRepository.save(user);
+        }
 
         return new CompanyDocumentResponse(
                 saved.getId(),

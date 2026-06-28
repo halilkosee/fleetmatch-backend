@@ -19,4 +19,15 @@ public class UpdateCompanyProfileRequest {
 
     @Size(max = 255)
     private String website;
+
+    @Size(max = 255)
+    private String dbaName;
+
+    @Size(max = 255)
+    private String email;
+
+    private Integer fleetSize;
+
+    @Size(max = 1000)
+    private String description;
 }

@@ -52,4 +52,15 @@ public class Company extends BaseEntity {
 
     @Column(length = 2000)
     private String verificationNotes;
+
+    @Column(nullable = false)
+    private boolean companyInformationCompleted;
+
+    @Column(nullable = false)
+    private boolean marketSurveyCompleted;
+
+    private Integer manualPriority;
+
+    @Column(length = 1000)
+    private String adminInternalNotes;
 }

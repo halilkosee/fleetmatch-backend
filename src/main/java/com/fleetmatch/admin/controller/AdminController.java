@@ -2,6 +2,7 @@ package com.fleetmatch.admin.controller;
 
 import com.fleetmatch.admin.dto.AdminCompanyStatusRequest;
 import com.fleetmatch.admin.dto.AdminDashboardResponse;
+import com.fleetmatch.admin.dto.AdminLoadResponse;
 import com.fleetmatch.admin.dto.PendingUserResponse;
 import com.fleetmatch.admin.service.AdminService;
 import com.fleetmatch.audit.dto.AuditLogResponse;
@@ -12,6 +13,8 @@ import com.fleetmatch.company.document.service.CompanyDocumentService;
 import com.fleetmatch.company.dto.CompanyResponse;
 import com.fleetmatch.company.dto.PendingCompanyResponse;
 import com.fleetmatch.company.service.CompanyService;
+import com.fleetmatch.load.dto.LoadResponse;
+import com.fleetmatch.load.entity.LoadStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -74,6 +77,36 @@ public class AdminController {
     @GetMapping("/dashboard")
     public AdminDashboardResponse getDashboard() {
         return adminService.getDashboard();
+    }
+
+    @GetMapping("/loads")
+    public Page<AdminLoadResponse> getLoads(
+            @RequestParam(required = false) LoadStatus status,
+            @RequestParam(required = false) UUID brokerCompanyId,
+            @RequestParam(required = false) String keyword,
+            Pageable pageable
+    ) {
+        return adminService.getLoads(
+                status,
+                brokerCompanyId,
+                keyword,
+                pageable
+        );
+    }
+
+    @GetMapping("/loads/{loadId}")
+    public AdminLoadResponse getLoad(
+            @PathVariable UUID loadId
+    ) {
+        return adminService.getLoad(loadId);
+    }
+
+    @PatchMapping("/loads/{loadId}/cancel")
+    public LoadResponse cancelLoad(
+            @PathVariable UUID loadId,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return adminService.cancelLoad(loadId, currentUser);
     }
 
     @PutMapping("/companies/{companyId}/verify")

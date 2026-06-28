@@ -333,12 +333,25 @@ This is the backend foundation for an Admin Audit Logs screen.
 - Company suspension stores optional verification/operation notes.
 - Company suspension and reactivation create notifications for the affected company.
 - User unlock, company suspension, and company reactivation create audit logs.
+- Admins can inspect, filter, and cancel loads from operator endpoints.
 
 ### Product Behavior
 
 - Suspended companies are no longer `APPROVED`.
 - Existing core workflow checks already require company approval before load creation and offer submission.
 - This means suspended companies are blocked from active marketplace operations without changing the public load or offer APIs.
+
+## Controlled Marketplace Onboarding Sprint
+
+### Added Onboarding Foundation
+
+- New account lifecycle statuses model registration, verification, documents, review, approval, rejection, suspension, and activation.
+- Login now supports authenticated onboarding screens before marketplace approval.
+- Marketplace access guard now requires email verification, phone verification when applicable, approved company status, and approved or active user status.
+- Dashboard, load, offer, messaging, and WebSocket marketplace paths remain blocked before approval.
+- Added onboarding progress endpoint for the verification progress screen.
+- Added market survey storage with JSONB analytics fields for operating states, equipment types, regions, tools, challenges, and future integration interest.
+- Added submit-for-review flow that moves complete onboarding records into `IN_REVIEW` / `UNDER_REVIEW`.
 
 ## Remaining High-Priority Gaps
 
@@ -362,7 +375,6 @@ This is the backend foundation for an Admin Audit Logs screen.
 
 The backend still needs operator-grade endpoints for:
 
-- Admin load inspection and cancellation
 - Admin offer inspection and cancellation
 - Conversation inspection
 - Broadcast notifications
@@ -411,7 +423,6 @@ Recommended scope for the next sprint:
 
 - Add company suspend/reactivate endpoints.
 - Add admin account unlock endpoint.
-- Add admin load inspection endpoint.
 - Add admin offer inspection endpoint.
 - Add admin conversation inspection endpoint.
 - Add verification notes for company approval/rejection.

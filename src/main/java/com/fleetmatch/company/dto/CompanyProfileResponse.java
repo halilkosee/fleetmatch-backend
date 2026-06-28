@@ -34,4 +34,8 @@ public class CompanyProfileResponse {
     private Integer fleetSize;
 
     private String description;
+
+    private boolean companyInformationCompleted;
+
+    private boolean marketSurveyCompleted;
 }

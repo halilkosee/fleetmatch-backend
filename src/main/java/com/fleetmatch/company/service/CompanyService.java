@@ -14,6 +14,7 @@ import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.entity.CompanyUserRole;
+import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
 import com.fleetmatch.notification.entity.NotificationType;
 import com.fleetmatch.notification.service.NotificationService;
@@ -41,6 +42,7 @@ public class CompanyService {
         verifyCompany(companyId, null);
     }
 
+    @Transactional
     public void verifyCompany(UUID companyId, CustomUserDetails currentUser) {
 
         Company company = companyRepository.findById(companyId)
@@ -51,6 +53,10 @@ public class CompanyService {
         );
 
         companyRepository.save(company);
+        userRepository.findByCompanyId(company.getId())
+                .stream()
+                .filter(user -> user.getStatus() != UserStatus.SUSPENDED)
+                .forEach(user -> user.setStatus(UserStatus.APPROVED));
         notificationService.createForCompany(
                 company,
                 NotificationType.COMPANY_APPROVED,
@@ -66,6 +72,7 @@ public class CompanyService {
         rejectCompany(companyId, null);
     }
 
+    @Transactional
     public void rejectCompany(UUID companyId, CustomUserDetails currentUser) {
 
         Company company = companyRepository.findById(companyId)
@@ -76,6 +83,10 @@ public class CompanyService {
         );
 
         companyRepository.save(company);
+        userRepository.findByCompanyId(company.getId())
+                .stream()
+                .filter(user -> user.getStatus() != UserStatus.SUSPENDED)
+                .forEach(user -> user.setStatus(UserStatus.REJECTED));
         notificationService.createForCompany(
                 company,
                 NotificationType.COMPANY_REJECTED,
@@ -87,6 +98,7 @@ public class CompanyService {
         auditLogService.log(getActor(currentUser), AuditAction.COMPANY_REJECTED, "COMPANY", company.getId(), "Company rejected");
     }
 
+    @Transactional
     public void suspendCompany(
             UUID companyId,
             String notes,
@@ -117,6 +129,7 @@ public class CompanyService {
         );
     }
 
+    @Transactional
     public void reactivateCompany(
             UUID companyId,
             String notes,
@@ -209,7 +222,9 @@ public class CompanyService {
                 company.getDbaName(),
                 company.getEmail(),
                 company.getFleetSize(),
-                company.getDescription()
+                company.getDescription(),
+                company.isCompanyInformationCompleted(),
+                company.isMarketSurveyCompleted()
         );
     }
 
@@ -239,8 +254,21 @@ public class CompanyService {
 
         company.setPhone(request.getPhone());
         company.setWebsite(request.getWebsite());
+        company.setDbaName(request.getDbaName());
+        company.setEmail(request.getEmail());
+        company.setFleetSize(request.getFleetSize());
+        company.setDescription(request.getDescription());
+        company.setCompanyInformationCompleted(true);
+
+        if (user.getStatus() == UserStatus.PHONE_VERIFIED ||
+                user.getStatus() == UserStatus.EMAIL_VERIFIED ||
+                user.getStatus() == UserStatus.REGISTERED ||
+                user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            user.setStatus(UserStatus.DOCUMENTS_PENDING);
+        }
 
         Company saved = companyRepository.save(company);
+        userRepository.save(user);
         auditLogService.log(user, AuditAction.COMPANY_UPDATED, "COMPANY", saved.getId(), "Company profile updated");
 
         return new CompanyProfileResponse(
@@ -255,7 +283,9 @@ public class CompanyService {
                 saved.getDbaName(),
                 saved.getEmail(),
                 saved.getFleetSize(),
-                saved.getDescription()
+                saved.getDescription(),
+                saved.isCompanyInformationCompleted(),
+                saved.isMarketSurveyCompleted()
         );
     }
 
@@ -285,8 +315,17 @@ public class CompanyService {
         company.setPhone(request.getCompanyPhone());
         company.setFleetSize(request.getFleetSize());
         company.setDescription(request.getDescription());
+        company.setCompanyInformationCompleted(true);
+
+        if (user.getStatus() == UserStatus.PHONE_VERIFIED ||
+                user.getStatus() == UserStatus.EMAIL_VERIFIED ||
+                user.getStatus() == UserStatus.REGISTERED ||
+                user.getStatus() == UserStatus.PENDING_VERIFICATION) {
+            user.setStatus(UserStatus.DOCUMENTS_PENDING);
+        }
 
         Company saved = companyRepository.save(company);
+        userRepository.save(user);
         auditLogService.log(user, AuditAction.COMPANY_UPDATED, "COMPANY", saved.getId(), "Company settings updated");
         return toCompanyProfile(saved);
     }
@@ -304,7 +343,9 @@ public class CompanyService {
                 company.getDbaName(),
                 company.getEmail(),
                 company.getFleetSize(),
-                company.getDescription()
+                company.getDescription(),
+                company.isCompanyInformationCompleted(),
+                company.isMarketSurveyCompleted()
         );
     }
 
