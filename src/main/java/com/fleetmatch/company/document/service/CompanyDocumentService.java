@@ -1,5 +1,6 @@
 package com.fleetmatch.company.document.service;
 
+import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.document.dto.CompanyDocumentResponse;
 import com.fleetmatch.company.document.dto.CreateCompanyDocumentRequest;
@@ -8,6 +9,7 @@ import com.fleetmatch.company.document.entity.DocumentReviewStatus;
 import com.fleetmatch.company.document.entity.DocumentType;
 import com.fleetmatch.company.document.repository.CompanyDocumentRepository;
 import com.fleetmatch.company.entity.Company;
+import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.security.user.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
@@ -65,6 +67,8 @@ public class CompanyDocumentService {
                         "You can only upload documents for your own company"
                 );
             }
+
+            ensureOnboardingEditable(user, company);
         }
 
         CompanyDocument document = new CompanyDocument();
@@ -102,6 +106,7 @@ public class CompanyDocumentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
 
         ensureCanAccessCompany(user, company);
+        ensureOnboardingEditable(user, company);
 
         CompanyDocument document = new CompanyDocument();
         document.setCompany(company);
@@ -168,6 +173,19 @@ public class CompanyDocumentService {
                 !user.getCompany().getId().equals(company.getId())) {
             throw new AccessDeniedException(
                     "You can only access documents for your own company"
+            );
+        }
+    }
+
+    private void ensureOnboardingEditable(User user, Company company) {
+        if (user.getPlatformRole() == PlatformRole.ADMIN) {
+            return;
+        }
+
+        if (user.getStatus() == UserStatus.IN_REVIEW ||
+                company.getVerificationStatus() == CompanyVerificationStatus.UNDER_REVIEW) {
+            throw new BusinessRuleException(
+                    "Company documents are locked during admin review. Contact support for urgent corrections."
             );
         }
     }

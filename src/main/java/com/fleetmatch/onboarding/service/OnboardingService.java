@@ -67,6 +67,8 @@ public class OnboardingService {
         User user = getUser(currentUser);
         Company company = requireCompany(user);
 
+        ensureOnboardingEditable(user, company);
+
         MarketSurvey survey = marketSurveyRepository.findByCompanyId(company.getId())
                 .orElseGet(MarketSurvey::new);
 
@@ -98,6 +100,11 @@ public class OnboardingService {
     public OnboardingProgressResponse submitForReview(CustomUserDetails currentUser) {
         User user = getUser(currentUser);
         Company company = requireCompany(user);
+
+        if (user.getStatus() == UserStatus.IN_REVIEW ||
+                company.getVerificationStatus() == CompanyVerificationStatus.UNDER_REVIEW) {
+            return getProgress(currentUser);
+        }
 
         if (!user.isEmailVerified()) {
             throw new BusinessRuleException("Email must be verified before review");
@@ -160,6 +167,15 @@ public class OnboardingService {
             throw new BusinessRuleException("Company is required for onboarding");
         }
         return user.getCompany();
+    }
+
+    private void ensureOnboardingEditable(User user, Company company) {
+        if (user.getStatus() == UserStatus.IN_REVIEW ||
+                company.getVerificationStatus() == CompanyVerificationStatus.UNDER_REVIEW) {
+            throw new BusinessRuleException(
+                    "Onboarding is locked during admin review. Contact support for urgent corrections."
+            );
+        }
     }
 
     private boolean phoneStepComplete(User user) {

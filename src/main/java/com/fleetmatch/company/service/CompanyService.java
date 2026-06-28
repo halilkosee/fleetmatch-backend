@@ -319,6 +319,8 @@ public class CompanyService {
             throw new AccessDeniedException("Only owners can update company profile");
         }
 
+        ensureOnboardingEditable(user, company);
+
         if (request.getMcNumber() != null &&
                 !Objects.equals(request.getMcNumber(), company.getMcNumber())) {
             throw new BusinessRuleException("MC number cannot be updated directly");
@@ -386,6 +388,9 @@ public class CompanyService {
         }
 
         Company company = user.getCompany();
+
+        ensureOnboardingEditable(user, company);
+
         company.setDbaName(request.getDbaName());
         company.setWebsite(request.getWebsite());
         company.setEmail(request.getCompanyEmail());
@@ -405,6 +410,15 @@ public class CompanyService {
         userRepository.save(user);
         auditLogService.log(user, AuditAction.COMPANY_UPDATED, "COMPANY", saved.getId(), "Company settings updated");
         return toCompanyProfile(saved);
+    }
+
+    private void ensureOnboardingEditable(User user, Company company) {
+        if (user.getStatus() == UserStatus.IN_REVIEW ||
+                company.getVerificationStatus() == CompanyVerificationStatus.UNDER_REVIEW) {
+            throw new BusinessRuleException(
+                    "Company onboarding is locked during admin review. Contact support for urgent corrections."
+            );
+        }
     }
 
     private CompanyProfileResponse toCompanyProfile(Company company) {
