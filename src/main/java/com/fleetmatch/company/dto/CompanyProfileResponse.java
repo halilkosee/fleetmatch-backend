@@ -31,6 +31,16 @@ public class CompanyProfileResponse {
 
     private String headquarters;
 
+    private String normalizedHeadquarters;
+
+    private boolean headquartersAddressVerified;
+
+    private String headquartersAddressVerificationStatus;
+
+    private Double headquartersLatitude;
+
+    private Double headquartersLongitude;
+
     private String primaryContact;
 
     private String authorityStatus;

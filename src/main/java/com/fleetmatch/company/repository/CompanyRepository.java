@@ -39,6 +39,10 @@ public interface CompanyRepository extends JpaRepository<Company, UUID> {
             Pageable pageable
     );
 
+    List<Company> findTop25ByHeadquartersIsNotNullAndHeadquartersAddressVerificationStatus(
+            String headquartersAddressVerificationStatus
+    );
+
     long countByVerificationStatusIn(
             Collection<CompanyVerificationStatus> verificationStatuses
     );

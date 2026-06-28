@@ -9,6 +9,7 @@ import com.fleetmatch.company.dto.PendingCompanyResponse;
 import com.fleetmatch.company.dto.UpdateCompanyProfileRequest;
 import com.fleetmatch.company.dto.UpdateCompanySettingsRequest;
 import com.fleetmatch.company.entity.Company;
+import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.company.review.entity.CompanyReviewAction;
@@ -297,6 +298,11 @@ public class CompanyService {
                 company.getEin(),
                 company.getStateOfFormation(),
                 company.getHeadquarters(),
+                company.getNormalizedHeadquarters(),
+                company.isHeadquartersAddressVerified(),
+                company.getHeadquartersAddressVerificationStatus(),
+                company.getHeadquartersLatitude(),
+                company.getHeadquartersLongitude(),
                 company.getPrimaryContact(),
                 company.getAuthorityStatus(),
                 company.getBrokerBondOrTrust(),
@@ -329,18 +335,30 @@ public class CompanyService {
 
         ensureOnboardingEditable(user, company);
 
-        company.setMcNumber(request.getMcNumber());
-        company.setDotNumber(request.getDotNumber());
+        String mcNumber = normalizeAuthorityNumber(request.getMcNumber());
+        if ((company.getType() == CompanyType.BROKER || company.getType() == CompanyType.FLEET) && (isBlank(mcNumber) || !mcNumber.matches("^MC-\\d{5,8}$"))) {
+            throw new BusinessRuleException("MC authority number must use format MC-123456");
+        }
+
+        company.setMcNumber(mcNumber);
+        company.setDotNumber(company.getType() == CompanyType.BROKER ? null : request.getDotNumber());
         company.setEntityType(request.getEntityType());
         company.setEin(request.getEin());
         company.setStateOfFormation(request.getStateOfFormation());
+        if (!java.util.Objects.equals(request.getHeadquarters(), company.getHeadquarters())) {
+            company.setHeadquartersAddressVerified(false);
+            company.setHeadquartersAddressVerificationStatus("PENDING");
+            company.setNormalizedHeadquarters(null);
+            company.setHeadquartersLatitude(null);
+            company.setHeadquartersLongitude(null);
+        }
         company.setHeadquarters(request.getHeadquarters());
         company.setPrimaryContact(request.getPrimaryContact());
         company.setAuthorityStatus(request.getAuthorityStatus());
         company.setBrokerBondOrTrust(request.getBrokerBondOrTrust());
         company.setInsuranceCoverage(request.getInsuranceCoverage());
         company.setOperatingRegions(request.getOperatingRegions());
-        company.setPhone(request.getPhone());
+        company.setPhone(user.isPhoneVerified() && !isBlank(user.getPhone()) ? user.getPhone() : request.getPhone());
         company.setWebsite(request.getWebsite());
         company.setDbaName(request.getDbaName());
         company.setEmail(request.getEmail());
@@ -370,6 +388,11 @@ public class CompanyService {
                 saved.getEin(),
                 saved.getStateOfFormation(),
                 saved.getHeadquarters(),
+                saved.getNormalizedHeadquarters(),
+                saved.isHeadquartersAddressVerified(),
+                saved.getHeadquartersAddressVerificationStatus(),
+                saved.getHeadquartersLatitude(),
+                saved.getHeadquartersLongitude(),
                 saved.getPrimaryContact(),
                 saved.getAuthorityStatus(),
                 saved.getBrokerBondOrTrust(),
@@ -451,6 +474,11 @@ public class CompanyService {
                 company.getEin(),
                 company.getStateOfFormation(),
                 company.getHeadquarters(),
+                company.getNormalizedHeadquarters(),
+                company.isHeadquartersAddressVerified(),
+                company.getHeadquartersAddressVerificationStatus(),
+                company.getHeadquartersLatitude(),
+                company.getHeadquartersLongitude(),
                 company.getPrimaryContact(),
                 company.getAuthorityStatus(),
                 company.getBrokerBondOrTrust(),
@@ -474,6 +502,18 @@ public class CompanyService {
 
         return userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private String normalizeAuthorityNumber(String value) {
+        if (value == null || value.isBlank()) {
+            return value;
+        }
+
+        return value.trim().toUpperCase();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private String details(String action, String notes) {

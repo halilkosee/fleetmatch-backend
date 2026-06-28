@@ -30,6 +30,19 @@ public class Company extends BaseEntity {
     @Column(length = 255)
     private String headquarters;
 
+    @Column(length = 255)
+    private String normalizedHeadquarters;
+
+    @Column(nullable = false)
+    private boolean headquartersAddressVerified;
+
+    @Column(length = 50)
+    private String headquartersAddressVerificationStatus = "PENDING";
+
+    private Double headquartersLatitude;
+
+    private Double headquartersLongitude;
+
     @Column(nullable = false, unique = true)
     private String email;
 

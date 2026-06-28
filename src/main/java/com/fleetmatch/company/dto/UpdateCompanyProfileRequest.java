@@ -1,5 +1,6 @@
 package com.fleetmatch.company.dto;
 
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -8,7 +9,8 @@ import lombok.Setter;
 @Setter
 public class UpdateCompanyProfileRequest {
 
-    @Size(max = 100)
+    @Size(max = 20)
+    @Pattern(regexp = "^$|^MC-\\d{5,8}$", message = "Authority number must use format MC-123456")
     private String mcNumber;
 
     @Size(max = 100)
@@ -18,6 +20,7 @@ public class UpdateCompanyProfileRequest {
     private String entityType;
 
     @Size(max = 50)
+    @Pattern(regexp = "^$|^\\d{2}-\\d{7}$", message = "EIN must use format 12-3456789")
     private String ein;
 
     @Size(max = 100)
