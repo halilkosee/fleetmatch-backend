@@ -36,7 +36,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       probes:
@@ -59,3 +59,5 @@ fleetmatch:
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     from: ${MAIL_FROM:no-reply@easyfleetmatch.com}
+  rate-limit:
+    store: ${RATE_LIMIT_STORE:memory}

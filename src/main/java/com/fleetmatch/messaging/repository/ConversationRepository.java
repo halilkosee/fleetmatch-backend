@@ -46,4 +46,22 @@ public interface ConversationRepository extends JpaRepository<Conversation, UUID
             @Param("companyId") UUID companyId,
             Pageable pageable
     );
+
+    @EntityGraph(attributePaths = {
+            "load",
+            "brokerCompany",
+            "fleetCompany"
+    })
+    Page<Conversation> findByArchivedAtIsNull(Pageable pageable);
+
+    @EntityGraph(attributePaths = {
+            "load",
+            "brokerCompany",
+            "fleetCompany"
+    })
+    Page<Conversation> findByBrokerCompanyIdOrFleetCompanyId(
+            UUID brokerCompanyId,
+            UUID fleetCompanyId,
+            Pageable pageable
+    );
 }

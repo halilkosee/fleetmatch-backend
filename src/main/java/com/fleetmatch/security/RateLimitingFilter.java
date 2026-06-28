@@ -10,6 +10,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -27,15 +30,24 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.time.Duration;
 
 @Component
 public class RateLimitingFilter extends OncePerRequestFilter {
 
     private final ObjectMapper objectMapper;
+    private final StringRedisTemplate redisTemplate;
+    private final String store;
     private final Map<String, Window> windows = new ConcurrentHashMap<>();
 
-    public RateLimitingFilter(ObjectMapper objectMapper) {
+    public RateLimitingFilter(
+            ObjectMapper objectMapper,
+            ObjectProvider<StringRedisTemplate> redisTemplate,
+            @Value("${fleetmatch.rate-limit.store:memory}") String store
+    ) {
         this.objectMapper = objectMapper;
+        this.redisTemplate = redisTemplate.getIfAvailable();
+        this.store = store;
     }
 
     @Override
@@ -60,16 +72,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
 
         String key = buildKey(rule, activeRequest, bodyIdentity);
-        Window window = windows.compute(key, (ignored, existing) -> {
-            long now = System.currentTimeMillis();
-            if (existing == null || now > existing.resetAt) {
-                return new Window(1, now + rule.windowMillis);
-            }
-            existing.count++;
-            return existing;
-        });
-
-        if (window.count > rule.limit) {
+        if (isLimited(key, rule)) {
             response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
             response.setContentType("application/json");
             objectMapper.writeValue(
@@ -87,6 +90,26 @@ public class RateLimitingFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(activeRequest, response);
+    }
+
+    private boolean isLimited(String key, Rule rule) {
+        if ("redis".equalsIgnoreCase(store) && redisTemplate != null) {
+            Long count = redisTemplate.opsForValue().increment(key);
+            if (count != null && count == 1L) {
+                redisTemplate.expire(key, Duration.ofMillis(rule.windowMillis));
+            }
+            return count != null && count > rule.limit;
+        }
+
+        Window window = windows.compute(key, (ignored, existing) -> {
+            long now = System.currentTimeMillis();
+            if (existing == null || now > existing.resetAt) {
+                return new Window(1, now + rule.windowMillis);
+            }
+            existing.count++;
+            return existing;
+        });
+        return window.count > rule.limit;
     }
 
     private Rule resolveRule(HttpServletRequest request) {

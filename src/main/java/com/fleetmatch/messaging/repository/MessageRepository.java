@@ -33,6 +33,8 @@ public interface MessageRepository extends JpaRepository<Message, UUID> {
 
     List<Message> findByConversationId(UUID conversationId);
 
+    long countByConversationId(UUID conversationId);
+
     Optional<Message> findTopByConversationIdAndDeletedAtIsNullOrderByCreatedAtDesc(UUID conversationId);
 
     @Query("""

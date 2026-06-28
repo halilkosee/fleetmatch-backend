@@ -11,6 +11,7 @@ import com.fleetmatch.company.dto.UpdateCompanySettingsRequest;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
+import com.fleetmatch.email.service.EmailTemplateService;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.entity.CompanyUserRole;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fleetmatch.company.dto.CompanyResponse;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -37,6 +39,7 @@ public class CompanyService {
     private final UserRepository userRepository;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+    private final EmailTemplateService emailTemplateService;
 
     public void verifyCompany(UUID companyId) {
         verifyCompany(companyId, null);
@@ -51,12 +54,16 @@ public class CompanyService {
         company.setVerificationStatus(
                 CompanyVerificationStatus.APPROVED
         );
+        company.setRejectionReason(null);
+        company.setAdditionalDocumentsRequest(null);
 
         companyRepository.save(company);
-        userRepository.findByCompanyId(company.getId())
+        List<User> users = userRepository.findByCompanyId(company.getId());
+        users
                 .stream()
                 .filter(user -> user.getStatus() != UserStatus.SUSPENDED)
                 .forEach(user -> user.setStatus(UserStatus.APPROVED));
+        userRepository.saveAll(users);
         notificationService.createForCompany(
                 company,
                 NotificationType.COMPANY_APPROVED,
@@ -65,6 +72,17 @@ public class CompanyService {
                 "COMPANY",
                 company.getId()
         );
+        notificationService.createForCompany(
+                company,
+                NotificationType.SUBSCRIPTION_AVAILABLE,
+                "Subscription available",
+                "Your company has been approved. You can now choose a subscription plan.",
+                "COMPANY",
+                company.getId()
+        );
+        emailCompanyUsers(company, "verification_approved", Map.of(
+                "companyName", company.getLegalName()
+        ));
         auditLogService.log(getActor(currentUser), AuditAction.COMPANY_APPROVED, "COMPANY", company.getId(), "Company approved");
     }
 
@@ -74,6 +92,16 @@ public class CompanyService {
 
     @Transactional
     public void rejectCompany(UUID companyId, CustomUserDetails currentUser) {
+        rejectCompany(companyId, null, null, currentUser);
+    }
+
+    @Transactional
+    public void rejectCompany(
+            UUID companyId,
+            String reason,
+            String notes,
+            CustomUserDetails currentUser
+    ) {
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
@@ -81,12 +109,16 @@ public class CompanyService {
         company.setVerificationStatus(
                 CompanyVerificationStatus.REJECTED
         );
+        company.setRejectionReason(reason);
+        company.setVerificationNotes(notes);
 
         companyRepository.save(company);
-        userRepository.findByCompanyId(company.getId())
+        List<User> users = userRepository.findByCompanyId(company.getId());
+        users
                 .stream()
                 .filter(user -> user.getStatus() != UserStatus.SUSPENDED)
                 .forEach(user -> user.setStatus(UserStatus.REJECTED));
+        userRepository.saveAll(users);
         notificationService.createForCompany(
                 company,
                 NotificationType.COMPANY_REJECTED,
@@ -95,7 +127,17 @@ public class CompanyService {
                 "COMPANY",
                 company.getId()
         );
-        auditLogService.log(getActor(currentUser), AuditAction.COMPANY_REJECTED, "COMPANY", company.getId(), "Company rejected");
+        emailCompanyUsers(company, "verification_rejected", Map.of(
+                "companyName", company.getLegalName(),
+                "reason", reason == null ? "" : reason
+        ));
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.COMPANY_REJECTED,
+                "COMPANY",
+                company.getId(),
+                details("Company rejected", reason)
+        );
     }
 
     @Transactional
@@ -364,5 +406,18 @@ public class CompanyService {
         }
 
         return action + ": " + notes;
+    }
+
+    private void emailCompanyUsers(
+            Company company,
+            String templateKey,
+            Map<String, String> variables
+    ) {
+        userRepository.findByCompanyId(company.getId())
+                .forEach(user -> emailTemplateService.sendTemplate(
+                        templateKey,
+                        user.getEmail(),
+                        variables
+                ));
     }
 }

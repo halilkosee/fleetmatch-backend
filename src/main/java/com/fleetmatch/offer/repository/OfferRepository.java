@@ -41,6 +41,8 @@ public interface OfferRepository extends JpaRepository<Offer, UUID> {
 
     long countByStatus(OfferStatus status);
 
+    Page<Offer> findByStatus(OfferStatus status, Pageable pageable);
+
     List<Offer> findByFleetUserCompanyId(UUID companyId);
 
     Page<Offer> findByFleetUserCompanyId(

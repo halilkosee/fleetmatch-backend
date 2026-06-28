@@ -353,6 +353,24 @@ This is the backend foundation for an Admin Audit Logs screen.
 - Added market survey storage with JSONB analytics fields for operating states, equipment types, regions, tools, challenges, and future integration interest.
 - Added submit-for-review flow that moves complete onboarding records into `IN_REVIEW` / `UNDER_REVIEW`.
 
+## Admin Review And Launch Operations Sprint
+
+### Added Operational Control
+
+- Added approval queue endpoints for manual review waves.
+- Added admin company review detail with company profile, documents, survey, notes, priority, rejection reason, and additional document requests.
+- Added request-additional-documents flow with notification, email template trigger, and audit log.
+- Added rejection reason support for company review.
+- Added admin internal notes and manual priority support.
+- Added configurable email template storage and admin CRUD endpoints.
+- Added subscription plan browsing and selection after company approval.
+- Added admin offer inspection and cancellation.
+- Added admin conversation inspection and admin message review.
+- Added onboarding analytics for company mix, review volume, operating states, equipment, load boards, and TMS usage.
+- Added request correlation id response header and MDC value.
+- Added Redis-backed rate limiting option with in-memory fallback.
+- Added Prometheus metrics exposure.
+
 ## Remaining High-Priority Gaps
 
 ### Security Hardening

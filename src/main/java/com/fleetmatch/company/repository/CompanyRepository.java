@@ -4,6 +4,8 @@ import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.util.Collection;
 import java.util.List;
@@ -23,6 +25,21 @@ public interface CompanyRepository extends JpaRepository<Company, UUID> {
     );
 
     List<Company> findByVerificationStatusIn(
+            Collection<CompanyVerificationStatus> verificationStatuses
+    );
+
+    Page<Company> findByVerificationStatusIn(
+            Collection<CompanyVerificationStatus> verificationStatuses,
+            Pageable pageable
+    );
+
+    Page<Company> findByVerificationStatusInAndType(
+            Collection<CompanyVerificationStatus> verificationStatuses,
+            CompanyType type,
+            Pageable pageable
+    );
+
+    long countByVerificationStatusIn(
             Collection<CompanyVerificationStatus> verificationStatuses
     );
 }

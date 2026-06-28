@@ -2,8 +2,10 @@ package com.fleetmatch.subscription.service;
 
 import com.fleetmatch.audit.entity.AuditAction;
 import com.fleetmatch.audit.service.AuditLogService;
+import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.entity.Company;
+import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.notification.entity.NotificationType;
 import com.fleetmatch.notification.service.NotificationService;
 import com.fleetmatch.company.repository.CompanyRepository;
@@ -14,6 +16,7 @@ import com.fleetmatch.subscription.entity.SubscriptionPlan;
 import com.fleetmatch.subscription.repository.CompanySubscriptionRepository;
 import com.fleetmatch.subscription.repository.SubscriptionPlanRepository;
 import com.fleetmatch.user.entity.User;
+import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -139,6 +142,17 @@ public class SubscriptionService {
     public List<SubscriptionPlanResponse> getAllPlans() {
 
         return subscriptionPlanRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    public List<SubscriptionPlanResponse> getAvailablePlansForApprovedCompany(
+            CustomUserDetails currentUser
+    ) {
+        requireApprovedSubscriptionSelectionUser(currentUser);
+
+        return subscriptionPlanRepository.findByActiveTrue()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -279,6 +293,64 @@ public class SubscriptionService {
         return mapSubscription(saved);
     }
 
+    public CompanySubscriptionResponse selectPlanForApprovedCompany(
+            UUID planId,
+            CustomUserDetails currentUser
+    ) {
+        User user = requireApprovedSubscriptionSelectionUser(currentUser);
+        Company company = user.getCompany();
+
+        SubscriptionPlan plan =
+                subscriptionPlanRepository.findById(planId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Subscription plan not found"
+                                ));
+
+        if (!plan.getActive()) {
+            throw new BusinessRuleException("Subscription plan is not available");
+        }
+
+        companySubscriptionRepository
+                .findByCompanyIdAndActiveTrue(company.getId())
+                .ifPresent(existing -> {
+                    existing.setActive(false);
+                    companySubscriptionRepository.save(existing);
+                });
+
+        CompanySubscription subscription = new CompanySubscription();
+        subscription.setCompany(company);
+        subscription.setSubscriptionPlan(plan);
+        subscription.setStartDate(LocalDate.now());
+        subscription.setAutoRenew(false);
+
+        CompanySubscription saved = companySubscriptionRepository.save(subscription);
+        auditLogService.log(
+                user,
+                AuditAction.SUBSCRIPTION_SELECTED,
+                "SUBSCRIPTION",
+                saved.getId(),
+                "Company selected subscription plan " + plan.getName()
+        );
+        auditLogService.log(
+                user,
+                AuditAction.SUBSCRIPTION_CHANGED,
+                "COMPANY",
+                company.getId(),
+                "Company subscription changed to plan " + plan.getName()
+        );
+        notificationService.createForCompany(
+                company,
+                NotificationType.SUBSCRIPTION_ASSIGNED,
+                "Subscription selected",
+                "Your subscription plan is now active",
+                "SUBSCRIPTION",
+                saved.getId()
+        );
+
+        return mapSubscription(saved);
+    }
+
     private CompanySubscriptionResponse mapSubscription(
             CompanySubscription subscription
     ) {
@@ -379,5 +451,22 @@ public class SubscriptionService {
 
         return userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private User requireApprovedSubscriptionSelectionUser(CustomUserDetails currentUser) {
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getCompany() == null) {
+            throw new BusinessRuleException("Company is required before selecting a subscription");
+        }
+
+        if (user.getCompany().getVerificationStatus() != CompanyVerificationStatus.APPROVED ||
+                (user.getStatus() != UserStatus.APPROVED &&
+                        user.getStatus() != UserStatus.ACTIVE)) {
+            throw new BusinessRuleException("Company must be approved before selecting a subscription");
+        }
+
+        return user;
     }
 }
