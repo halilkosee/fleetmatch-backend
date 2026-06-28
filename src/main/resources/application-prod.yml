@@ -16,6 +16,12 @@ spring:
 
 fleetmatch:
   environment: PROD
+  mail:
+    provider: ${MAIL_PROVIDER:smtp}
+  sms:
+    provider: ${SMS_PROVIDER:webhook}
+  rate-limit:
+    store: ${RATE_LIMIT_STORE:redis}
   jwt:
     secret: ${JWT_SECRET}
   cors:

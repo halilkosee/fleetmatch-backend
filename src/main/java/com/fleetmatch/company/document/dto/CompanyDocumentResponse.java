@@ -20,6 +20,12 @@ public class CompanyDocumentResponse {
 
     private String fileUrl;
 
+    private String originalFileName;
+
+    private String contentType;
+
+    private Long fileSizeBytes;
+
     private DocumentReviewStatus reviewStatus;
 
     private String reviewNotes;

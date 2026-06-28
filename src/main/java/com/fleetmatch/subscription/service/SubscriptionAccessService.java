@@ -3,6 +3,7 @@ package com.fleetmatch.subscription.service;
 import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.subscription.entity.CompanySubscription;
+import com.fleetmatch.subscription.entity.SubscriptionPaymentStatus;
 import com.fleetmatch.subscription.repository.CompanySubscriptionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -150,6 +151,13 @@ public class SubscriptionAccessService {
             CompanySubscription subscription
     ) {
         LocalDate today = LocalDate.now();
+
+        if (subscription.getPaymentStatus() != SubscriptionPaymentStatus.ACTIVE &&
+                subscription.getPaymentStatus() != SubscriptionPaymentStatus.TRIALING) {
+            throw new BusinessRuleException(
+                    "Subscription payment is not active"
+            );
+        }
 
         if (Boolean.FALSE.equals(subscription.getSubscriptionPlan().getActive())) {
             throw new BusinessRuleException(

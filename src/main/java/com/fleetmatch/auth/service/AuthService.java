@@ -19,7 +19,6 @@ import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.common.exception.ResourceAlreadyExistsException;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.repository.CompanyRepository;
-import com.fleetmatch.subscription.service.SubscriptionService;
 import com.fleetmatch.user.entity.CompanyUserRole;
 import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;
@@ -48,8 +47,6 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
-    private final SubscriptionService
-            subscriptionService;
     private final PasswordPolicyService passwordPolicyService;
     private final VerificationCodeService verificationCodeService;
     private final AuditLogService auditLogService;
@@ -81,7 +78,6 @@ public class AuthService {
         company.setType(request.getCompanyType());
 
         company = companyRepository.save(company);
-        subscriptionService.assignFreePlan(company);
 
         User user = new User();
         user.setFirstName(request.getFirstName());

@@ -33,6 +33,17 @@ public class CompanySubscription extends BaseEntity {
     @Column(nullable = false)
     private Boolean autoRenew = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private SubscriptionPaymentStatus paymentStatus =
+            SubscriptionPaymentStatus.ACTIVE;
+
+    private String paymentProvider;
+
+    private String externalSubscriptionId;
+
+    private String externalCustomerId;
+
     // OVERRIDES
 
     private BigDecimal customPrice;

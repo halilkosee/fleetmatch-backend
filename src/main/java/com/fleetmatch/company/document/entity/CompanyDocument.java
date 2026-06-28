@@ -32,6 +32,14 @@ public class CompanyDocument {
     @Column(nullable = false)
     private String fileUrl;
 
+    private String storageKey;
+
+    private String originalFileName;
+
+    private String contentType;
+
+    private Long fileSizeBytes;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DocumentReviewStatus reviewStatus = DocumentReviewStatus.PENDING;

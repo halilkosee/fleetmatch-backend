@@ -32,6 +32,18 @@ spring:
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
 
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:true}
+
 management:
   endpoints:
     web:
@@ -54,10 +66,25 @@ fleetmatch:
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
   mail:
+    provider: ${MAIL_PROVIDER:log}
     host: ${MAIL_HOST:}
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
     from: ${MAIL_FROM:no-reply@easyfleetmatch.com}
+  sms:
+    provider: ${SMS_PROVIDER:log}
+    webhook-url: ${SMS_WEBHOOK_URL:}
+    token: ${SMS_WEBHOOK_TOKEN:}
+    from: ${SMS_FROM:EasyFleetMatch}
+    twilio:
+      account-sid: ${TWILIO_ACCOUNT_SID:}
+      auth-token: ${TWILIO_AUTH_TOKEN:}
+      from: ${TWILIO_FROM:}
+  documents:
+    storage:
+      provider: ${DOCUMENT_STORAGE_PROVIDER:local}
+      local-path: ${DOCUMENT_STORAGE_LOCAL_PATH:./data/company-documents}
+    max-file-size-bytes: ${DOCUMENT_MAX_FILE_SIZE_BYTES:10485760}
   rate-limit:
     store: ${RATE_LIMIT_STORE:memory}

@@ -1,5 +1,6 @@
 package com.fleetmatch.subscription.dto;
 
+import com.fleetmatch.subscription.entity.SubscriptionPaymentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -26,6 +27,12 @@ public class CompanySubscriptionResponse {
     private LocalDate endDate;
 
     private Boolean active;
+
+    private SubscriptionPaymentStatus paymentStatus;
+
+    private String paymentProvider;
+
+    private String externalSubscriptionId;
 
     private BigDecimal customPrice;
 

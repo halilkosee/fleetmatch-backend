@@ -373,19 +373,38 @@ This is the backend foundation for an Admin Audit Logs screen.
 - Added Redis-backed rate limiting option with in-memory fallback.
 - Added Prometheus metrics exposure.
 
+## Real User Launch Hardening
+
+### Added
+
+- Registration no longer creates an active subscription automatically; users must be approved and then select a plan.
+- Paid plan selection now creates a `PENDING_PAYMENT` subscription and does not unlock marketplace usage until payment status is activated.
+- Added admin subscription payment-status endpoint for manual invoice/payment operations and future payment webhooks.
+- Added subscription payment status model for `PENDING_PAYMENT`, `ACTIVE`, `TRIALING`, `PAST_DUE`, `CANCELED`, and `EXPIRED`.
+- Added multipart company document upload with local secure storage, file size/type validation, and authenticated download endpoint.
+- Added document storage metadata for storage key, original file name, content type, and file size.
+- Added SMTP email provider option with local logging fallback.
+- Added Twilio SMS provider and webhook-based SMS provider options with local logging fallback.
+- Added production readiness validation so PROD fails fast without real mail, real SMS, Redis rate limiting, and a strong JWT secret.
+- Added test coverage for payment-status subscription gating.
+
 ## Remaining High-Priority Gaps
 
 ### Security Hardening
 
-- Move rate limiting to Redis before multi-instance deployment.
+- Configure `RATE_LIMIT_STORE=redis` before PROD; the readiness validator now enforces this.
 - Add explicit admin UI support for unlocking temporarily locked accounts.
 - Consider refresh token/session management when frontend/mobile authentication matures.
 
 ### Subscription Lifecycle
 
-- Define expired subscription behavior.
-- Add subscription status model if needed.
+- Connect Stripe or the chosen payment provider to the new subscription payment-status model.
 - Add scheduled notification for subscription expiration.
+
+### Document Storage
+
+- Move local document storage to S3/GCS or a managed private object store before multi-instance production.
+- Add malware scanning if user-uploaded documents are exposed to staff workstations.
 
 ### Workflow Concurrency
 

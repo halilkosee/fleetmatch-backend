@@ -1,10 +1,17 @@
 package com.fleetmatch.auth.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
+@ConditionalOnProperty(
+        prefix = "fleetmatch.mail",
+        name = "provider",
+        havingValue = "log",
+        matchIfMissing = true
+)
 public class LoggingEmailService implements EmailService {
 
     @Override

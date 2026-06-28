@@ -88,4 +88,17 @@ public class SubscriptionAdminController {
         return subscriptionService
                 .getCompanySubscription(companyId);
     }
+
+    @PatchMapping("/company/{companyId}/payment-status")
+    public CompanySubscriptionResponse updatePaymentStatus(
+            @PathVariable UUID companyId,
+            @RequestBody UpdateSubscriptionPaymentStatusRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return subscriptionService.updatePaymentStatus(
+                companyId,
+                request,
+                currentUser
+        );
+    }
 }

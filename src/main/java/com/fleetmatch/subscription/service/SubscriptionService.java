@@ -13,6 +13,7 @@ import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.subscription.dto.*;
 import com.fleetmatch.subscription.entity.CompanySubscription;
 import com.fleetmatch.subscription.entity.SubscriptionPlan;
+import com.fleetmatch.subscription.entity.SubscriptionPaymentStatus;
 import com.fleetmatch.subscription.repository.CompanySubscriptionRepository;
 import com.fleetmatch.subscription.repository.SubscriptionPlanRepository;
 import com.fleetmatch.user.entity.User;
@@ -235,6 +236,8 @@ public class SubscriptionService {
         subscription.setAutoRenew(
                 request.getAutoRenew()
         );
+        subscription.setActive(true);
+        subscription.setPaymentStatus(SubscriptionPaymentStatus.ACTIVE);
 
         subscription.setCustomPrice(
                 request.getCustomPrice()
@@ -323,6 +326,14 @@ public class SubscriptionService {
         subscription.setSubscriptionPlan(plan);
         subscription.setStartDate(LocalDate.now());
         subscription.setAutoRenew(false);
+        if (plan.getMonthlyPrice() != null &&
+                plan.getMonthlyPrice().signum() > 0) {
+            subscription.setActive(false);
+            subscription.setPaymentStatus(SubscriptionPaymentStatus.PENDING_PAYMENT);
+        } else {
+            subscription.setActive(true);
+            subscription.setPaymentStatus(SubscriptionPaymentStatus.ACTIVE);
+        }
 
         CompanySubscription saved = companySubscriptionRepository.save(subscription);
         auditLogService.log(
@@ -372,6 +383,12 @@ public class SubscriptionService {
 
                 subscription.getActive(),
 
+                subscription.getPaymentStatus(),
+
+                subscription.getPaymentProvider(),
+
+                subscription.getExternalSubscriptionId(),
+
                 subscription.getCustomPrice(),
 
                 subscription.getVehicleLimitOverride(),
@@ -415,6 +432,41 @@ public class SubscriptionService {
 
         companySubscriptionRepository
                 .save(subscription);
+    }
+
+    public CompanySubscriptionResponse updatePaymentStatus(
+            UUID companyId,
+            UpdateSubscriptionPaymentStatusRequest request,
+            CustomUserDetails currentUser
+    ) {
+        CompanySubscription subscription =
+                companySubscriptionRepository
+                        .findTopByCompanyIdOrderByCreatedAtDesc(companyId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Subscription not found"
+                                ));
+
+        subscription.setPaymentStatus(request.getPaymentStatus());
+        subscription.setPaymentProvider(request.getPaymentProvider());
+        subscription.setExternalSubscriptionId(request.getExternalSubscriptionId());
+        subscription.setExternalCustomerId(request.getExternalCustomerId());
+        subscription.setActive(
+                request.getPaymentStatus() == SubscriptionPaymentStatus.ACTIVE ||
+                        request.getPaymentStatus() == SubscriptionPaymentStatus.TRIALING
+        );
+
+        CompanySubscription saved =
+                companySubscriptionRepository.save(subscription);
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.SUBSCRIPTION_CHANGED,
+                "SUBSCRIPTION",
+                saved.getId(),
+                "Subscription payment status changed to " + saved.getPaymentStatus()
+        );
+
+        return mapSubscription(saved);
     }
 
     public CompanySubscriptionResponse getCompanySubscription(

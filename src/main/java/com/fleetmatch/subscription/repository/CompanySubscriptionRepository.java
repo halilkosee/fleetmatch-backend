@@ -14,6 +14,10 @@ public interface CompanySubscriptionRepository
             UUID companyId
     );
 
+    Optional<CompanySubscription> findTopByCompanyIdOrderByCreatedAtDesc(
+            UUID companyId
+    );
+
     List<CompanySubscription>
     findByActiveTrue();
 }
