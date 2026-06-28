@@ -11,10 +11,15 @@ import com.fleetmatch.audit.entity.AuditAction;
 import com.fleetmatch.audit.service.AuditLogService;
 import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.company.document.dto.CompanyDocumentResponse;
+import com.fleetmatch.company.document.dto.ReviewCompanyDocumentRequest;
+import com.fleetmatch.company.document.entity.CompanyDocument;
+import com.fleetmatch.company.document.entity.DocumentReviewStatus;
 import com.fleetmatch.company.document.repository.CompanyDocumentRepository;
 import com.fleetmatch.company.dto.CompanyProfileResponse;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
+import com.fleetmatch.company.review.entity.CompanyReviewAction;
+import com.fleetmatch.company.review.service.CompanyReviewEventService;
 import com.fleetmatch.load.dto.LoadResponse;
 import com.fleetmatch.load.entity.Load;
 import com.fleetmatch.messaging.entity.Conversation;
@@ -71,6 +76,7 @@ public class AdminService {
     private final MessageRepository messageRepository;
     private final CompanyDocumentRepository companyDocumentRepository;
     private final MarketSurveyRepository marketSurveyRepository;
+    private final CompanyReviewEventService companyReviewEventService;
     private final LoadService loadService;
     private final MessagingService messagingService;
     private final AuditLogService auditLogService;
@@ -256,6 +262,9 @@ public class AdminService {
                                 document.getDocumentType(),
                                 document.getFileName(),
                                 document.getFileUrl(),
+                                document.getReviewStatus(),
+                                document.getReviewNotes(),
+                                document.getReviewedAt(),
                                 document.getUploadedAt()
                         ))
                         .toList();
@@ -276,7 +285,59 @@ public class AdminService {
                 company.getManualPriority(),
                 company.getCreatedAt(),
                 documents,
+                companyReviewEventService.getEvents(company.getId()),
                 survey
+        );
+    }
+
+    @Transactional
+    public CompanyDocumentResponse reviewCompanyDocument(
+            UUID companyId,
+            UUID documentId,
+            ReviewCompanyDocumentRequest request,
+            CustomUserDetails currentUser
+    ) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+
+        CompanyDocument document = companyDocumentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company document not found"));
+
+        if (!document.getCompany().getId().equals(company.getId())) {
+            throw new BusinessRuleException("Document does not belong to this company");
+        }
+
+        document.setReviewStatus(request.getReviewStatus());
+        document.setReviewNotes(request.getReviewNotes());
+        document.setReviewedAt(java.time.LocalDateTime.now());
+        document.setReviewedByUserId(currentUser.getId());
+
+        CompanyDocument saved = companyDocumentRepository.save(document);
+        companyReviewEventService.record(
+                company,
+                getActor(currentUser),
+                CompanyReviewAction.DOCUMENT_REVIEWED,
+                saved.getId(),
+                saved.getReviewStatus().name(),
+                saved.getReviewNotes()
+        );
+
+        if (saved.getReviewStatus() == DocumentReviewStatus.REJECTED ||
+                saved.getReviewStatus() == DocumentReviewStatus.REQUESTED_AGAIN) {
+            company.setVerificationStatus(CompanyVerificationStatus.PENDING);
+            company.setAdditionalDocumentsRequest(saved.getReviewNotes());
+            companyRepository.save(company);
+        }
+
+        return new CompanyDocumentResponse(
+                saved.getId(),
+                saved.getDocumentType(),
+                saved.getFileName(),
+                saved.getFileUrl(),
+                saved.getReviewStatus(),
+                saved.getReviewNotes(),
+                saved.getReviewedAt(),
+                saved.getUploadedAt()
         );
     }
 
@@ -318,6 +379,14 @@ public class AdminService {
                 saved.getId(),
                 "Additional documents requested: " + request.getReason()
         );
+        companyReviewEventService.record(
+                saved,
+                getActor(currentUser),
+                CompanyReviewAction.ADDITIONAL_DOCUMENTS_REQUESTED,
+                null,
+                request.getReason(),
+                request.getNotes()
+        );
     }
 
     @Transactional
@@ -338,6 +407,14 @@ public class AdminService {
                 "COMPANY",
                 saved.getId(),
                 "Internal review note updated"
+        );
+        companyReviewEventService.record(
+                saved,
+                getActor(currentUser),
+                CompanyReviewAction.INTERNAL_NOTE_UPDATED,
+                null,
+                null,
+                request.getNotes()
         );
     }
 

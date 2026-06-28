@@ -32,5 +32,16 @@ public class CompanyDocument {
     @Column(nullable = false)
     private String fileUrl;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private DocumentReviewStatus reviewStatus = DocumentReviewStatus.PENDING;
+
+    @Column(length = 2000)
+    private String reviewNotes;
+
+    private LocalDateTime reviewedAt;
+
+    private UUID reviewedByUserId;
+
     private LocalDateTime uploadedAt = LocalDateTime.now();
 }

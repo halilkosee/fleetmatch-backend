@@ -6,6 +6,8 @@ import com.fleetmatch.company.document.repository.CompanyDocumentRepository;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
+import com.fleetmatch.company.review.entity.CompanyReviewAction;
+import com.fleetmatch.company.review.service.CompanyReviewEventService;
 import com.fleetmatch.onboarding.dto.MarketSurveyRequest;
 import com.fleetmatch.onboarding.dto.OnboardingProgressResponse;
 import com.fleetmatch.onboarding.entity.MarketSurvey;
@@ -28,6 +30,7 @@ public class OnboardingService {
     private final CompanyRepository companyRepository;
     private final CompanyDocumentRepository companyDocumentRepository;
     private final MarketSurveyRepository marketSurveyRepository;
+    private final CompanyReviewEventService companyReviewEventService;
 
     @Transactional(readOnly = true)
     public OnboardingProgressResponse getProgress(CustomUserDetails currentUser) {
@@ -120,6 +123,14 @@ public class OnboardingService {
         user.setStatus(UserStatus.IN_REVIEW);
         companyRepository.save(company);
         userRepository.save(user);
+        companyReviewEventService.record(
+                company,
+                user,
+                CompanyReviewAction.SUBMITTED_FOR_REVIEW,
+                null,
+                null,
+                "Company submitted for operational review"
+        );
 
         return getProgress(currentUser);
     }

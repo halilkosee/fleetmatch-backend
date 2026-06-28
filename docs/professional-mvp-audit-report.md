@@ -362,6 +362,8 @@ This is the backend foundation for an Admin Audit Logs screen.
 - Added request-additional-documents flow with notification, email template trigger, and audit log.
 - Added rejection reason support for company review.
 - Added admin internal notes and manual priority support.
+- Added per-document review status and admin document review endpoint.
+- Added company review history timeline for submissions, approvals, rejections, document review, notes, suspension, and reactivation.
 - Added configurable email template storage and admin CRUD endpoints.
 - Added subscription plan browsing and selection after company approval.
 - Added admin offer inspection and cancellation.

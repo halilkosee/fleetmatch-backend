@@ -4,6 +4,7 @@ import com.fleetmatch.company.document.dto.CompanyDocumentResponse;
 import com.fleetmatch.company.dto.CompanyProfileResponse;
 import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
+import com.fleetmatch.company.review.dto.CompanyReviewEventResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -25,6 +26,7 @@ public class AdminCompanyReviewResponse {
     private Integer manualPriority;
     private LocalDateTime registrationDate;
     private List<CompanyDocumentResponse> documents;
+    private List<CompanyReviewEventResponse> reviewHistory;
     private Survey survey;
 
     @Getter

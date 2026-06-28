@@ -1,6 +1,7 @@
 package com.fleetmatch.company.document.dto;
 
 import com.fleetmatch.company.document.entity.DocumentType;
+import com.fleetmatch.company.document.entity.DocumentReviewStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -18,6 +19,12 @@ public class CompanyDocumentResponse {
     private String fileName;
 
     private String fileUrl;
+
+    private DocumentReviewStatus reviewStatus;
+
+    private String reviewNotes;
+
+    private LocalDateTime reviewedAt;
 
     private LocalDateTime uploadedAt;
 }

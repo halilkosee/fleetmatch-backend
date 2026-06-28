@@ -11,6 +11,8 @@ import com.fleetmatch.company.dto.UpdateCompanySettingsRequest;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
+import com.fleetmatch.company.review.entity.CompanyReviewAction;
+import com.fleetmatch.company.review.service.CompanyReviewEventService;
 import com.fleetmatch.email.service.EmailTemplateService;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.user.entity.User;
@@ -40,6 +42,7 @@ public class CompanyService {
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
     private final EmailTemplateService emailTemplateService;
+    private final CompanyReviewEventService companyReviewEventService;
 
     public void verifyCompany(UUID companyId) {
         verifyCompany(companyId, null);
@@ -84,6 +87,14 @@ public class CompanyService {
                 "companyName", company.getLegalName()
         ));
         auditLogService.log(getActor(currentUser), AuditAction.COMPANY_APPROVED, "COMPANY", company.getId(), "Company approved");
+        companyReviewEventService.record(
+                company,
+                getActor(currentUser),
+                CompanyReviewAction.APPROVED,
+                null,
+                null,
+                company.getVerificationNotes()
+        );
     }
 
     public void rejectCompany(UUID companyId) {
@@ -138,6 +149,14 @@ public class CompanyService {
                 company.getId(),
                 details("Company rejected", reason)
         );
+        companyReviewEventService.record(
+                company,
+                getActor(currentUser),
+                CompanyReviewAction.REJECTED,
+                null,
+                reason,
+                notes
+        );
     }
 
     @Transactional
@@ -169,6 +188,14 @@ public class CompanyService {
                 company.getId(),
                 details("Company suspended", notes)
         );
+        companyReviewEventService.record(
+                company,
+                getActor(currentUser),
+                CompanyReviewAction.SUSPENDED,
+                null,
+                null,
+                notes
+        );
     }
 
     @Transactional
@@ -199,6 +226,14 @@ public class CompanyService {
                 "COMPANY",
                 company.getId(),
                 details("Company reactivated", notes)
+        );
+        companyReviewEventService.record(
+                company,
+                getActor(currentUser),
+                CompanyReviewAction.REACTIVATED,
+                null,
+                null,
+                notes
         );
     }
 

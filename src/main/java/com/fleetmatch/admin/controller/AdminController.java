@@ -14,6 +14,7 @@ import com.fleetmatch.audit.dto.AuditLogResponse;
 import com.fleetmatch.audit.entity.AuditAction;
 import com.fleetmatch.audit.service.AuditLogService;
 import com.fleetmatch.company.document.dto.CompanyDocumentResponse;
+import com.fleetmatch.company.document.dto.ReviewCompanyDocumentRequest;
 import com.fleetmatch.company.document.service.CompanyDocumentService;
 import com.fleetmatch.company.dto.CompanyResponse;
 import com.fleetmatch.company.dto.PendingCompanyResponse;
@@ -116,6 +117,21 @@ public class AdminController {
     ) {
         adminService.requestAdditionalDocuments(companyId, request, currentUser);
         return "Additional documents requested";
+    }
+
+    @PatchMapping("/companies/{companyId}/documents/{documentId}/review")
+    public CompanyDocumentResponse reviewCompanyDocument(
+            @PathVariable UUID companyId,
+            @PathVariable UUID documentId,
+            @Valid @RequestBody ReviewCompanyDocumentRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return adminService.reviewCompanyDocument(
+                companyId,
+                documentId,
+                request,
+                currentUser
+        );
     }
 
     @PatchMapping("/companies/{companyId}/internal-note")

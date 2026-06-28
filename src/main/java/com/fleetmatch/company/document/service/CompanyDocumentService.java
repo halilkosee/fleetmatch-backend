@@ -35,13 +35,7 @@ public class CompanyDocumentService {
 
         return companyDocumentRepository.findByCompanyId(companyId)
                 .stream()
-                .map(document -> new CompanyDocumentResponse(
-                        document.getId(),
-                        document.getDocumentType(),
-                        document.getFileName(),
-                        document.getFileUrl(),
-                        document.getUploadedAt()
-                ))
+                .map(this::toResponse)
                 .toList();
     }
 
@@ -88,12 +82,19 @@ public class CompanyDocumentService {
             userRepository.save(user);
         }
 
+        return toResponse(saved);
+    }
+
+    private CompanyDocumentResponse toResponse(CompanyDocument document) {
         return new CompanyDocumentResponse(
-                saved.getId(),
-                saved.getDocumentType(),
-                saved.getFileName(),
-                saved.getFileUrl(),
-                saved.getUploadedAt()
+                document.getId(),
+                document.getDocumentType(),
+                document.getFileName(),
+                document.getFileUrl(),
+                document.getReviewStatus(),
+                document.getReviewNotes(),
+                document.getReviewedAt(),
+                document.getUploadedAt()
         );
     }
 }
