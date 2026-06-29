@@ -20,6 +20,8 @@ DEV services:
 - postgres: host port `5433`, container port `5432`
 - redis: host port `6380`, container port `6379`
 
+DEV ports are bound to `127.0.0.1`; public DEV access should go through Nginx.
+
 ## Run PROD Stack
 
 ```bash

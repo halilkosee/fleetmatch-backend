@@ -4,7 +4,7 @@ This project currently supports manual DEV and PROD deployments. No cloud provid
 
 ## DEV Deployment
 
-1. Copy the repository to the DEV server.
+1. Copy or clone the repository to the DEV server.
 2. Create `.env.dev` from `.env.example`.
 3. Set `SPRING_PROFILES_ACTIVE=dev`.
 4. Set `DB_NAME=fleetmatch_dev`.
@@ -12,7 +12,7 @@ This project currently supports manual DEV and PROD deployments. No cloud provid
 6. Start the stack:
 
 ```bash
-docker compose --env-file .env.dev -f docker-compose.dev.yml up -d --build
+scripts/dev-stack.sh up
 ```
 
 7. Configure Nginx with `deploy/nginx/dev.conf`.
@@ -22,6 +22,8 @@ docker compose --env-file .env.dev -f docker-compose.dev.yml up -d --build
 ```text
 http://api-dev.easyfleetmatch.com/api/health
 ```
+
+Full DEV runbook: `docs/devops/development-environment.md`.
 
 ## PROD Deployment
 
