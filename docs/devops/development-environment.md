@@ -113,6 +113,48 @@ scripts/dev-stack.sh restart
 scripts/dev-stack.sh smoke
 ```
 
+## Automatic Deploy From GitHub
+
+The repository includes `.github/workflows/deploy-dev.yml`.
+
+When `develop` is pushed, GitHub Actions connects to the DEV server over SSH and runs:
+
+```bash
+scripts/deploy-dev.sh
+```
+
+Required GitHub repository secrets:
+
+```text
+DEV_SSH_HOST
+DEV_SSH_USER
+DEV_SSH_PRIVATE_KEY
+DEV_SSH_PORT
+DEV_APP_DIR
+```
+
+Recommended server path:
+
+```text
+/opt/easyfleetmatch/backend
+```
+
+`DEV_APP_DIR` is optional if the recommended path is used. `DEV_SSH_PORT` is optional when SSH runs on port `22`.
+
+The DEV server must already have:
+
+- repository cloned into `DEV_APP_DIR`
+- `.env.dev` created on the server
+- Docker and Docker Compose installed
+- Nginx configured for `api-dev.easyfleetmatch.com`
+- the GitHub deploy key allowed to pull the repository
+
+Manual deploy on the server:
+
+```bash
+APP_DIR=/opt/easyfleetmatch/backend BRANCH=develop scripts/deploy-dev.sh
+```
+
 ## Reset DEV Data
 
 This deletes DEV database and Redis data:

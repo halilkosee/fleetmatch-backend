@@ -25,6 +25,20 @@ http://api-dev.easyfleetmatch.com/api/health
 
 Full DEV runbook: `docs/devops/development-environment.md`.
 
+## DEV Auto Deployment
+
+Pushes to `develop` trigger `.github/workflows/deploy-dev.yml`.
+
+Configure these GitHub repository secrets before enabling the flow:
+
+```text
+DEV_SSH_HOST
+DEV_SSH_USER
+DEV_SSH_PRIVATE_KEY
+DEV_SSH_PORT
+DEV_APP_DIR
+```
+
 ## PROD Deployment
 
 1. Copy the repository to the PROD server.
