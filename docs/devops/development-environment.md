@@ -164,6 +164,40 @@ docker compose --env-file .env.dev -f docker-compose.dev.yml down -v
 scripts/dev-stack.sh up
 ```
 
+Or run the guarded reset script:
+
+```bash
+scripts/dev-reset.sh --yes
+```
+
+To reset DEV and load repeatable demo data:
+
+```bash
+scripts/dev-reset.sh --yes --seed
+```
+
+The seed script can also be run by itself after the stack is already healthy:
+
+```bash
+scripts/dev-seed.sh
+```
+
+Seeded DEV accounts use the same password:
+
+```text
+DevAdmin!123
+```
+
+Seeded users:
+
+```text
+admin@easyfleetmatch.dev
+broker.owner@easyfleetmatch.dev
+fleet.owner@easyfleetmatch.dev
+review.broker@easyfleetmatch.dev
+review.fleet@easyfleetmatch.dev
+```
+
 ## Frontend Integration
 
 Frontend should use:
