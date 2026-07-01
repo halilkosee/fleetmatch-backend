@@ -57,6 +57,10 @@ public class JwtService {
                 .compact();
     }
 
+    public long getExpirationMillis() {
+        return expiration;
+    }
+
     public String extractUsername(String token) {
 
         Claims claims = extractClaims(token);

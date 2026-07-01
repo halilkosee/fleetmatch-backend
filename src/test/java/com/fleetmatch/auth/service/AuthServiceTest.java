@@ -57,6 +57,8 @@ class AuthServiceTest {
     @Mock
     private VerificationCodeService verificationCodeService;
     @Mock
+    private RefreshTokenService refreshTokenService;
+    @Mock
     private AuditLogService auditLogService;
 
     @InjectMocks
@@ -131,10 +133,15 @@ class AuthServiceTest {
         when(passwordEncoder.matches("CorrectPass!123", user.getPassword()))
                 .thenReturn(true);
         when(jwtService.generateToken(user)).thenReturn("jwt-token");
+        when(jwtService.getExpirationMillis()).thenReturn(900000L);
+        when(refreshTokenService.issue(user, null, null)).thenReturn("refresh-token");
 
         AuthResponse response = authService.login(user.getEmail(), "CorrectPass!123");
 
         assertEquals("jwt-token", response.getToken());
+        assertEquals("refresh-token", response.getRefreshToken());
+        assertEquals("Bearer", response.getTokenType());
+        assertEquals(900000L, response.getExpiresInMs());
         assertEquals(0, user.getFailedLoginAttempts());
         verify(userRepository).save(user);
         verify(passwordPolicyService, never()).validate(any());
@@ -150,10 +157,13 @@ class AuthServiceTest {
         when(passwordEncoder.matches("old", user.getPassword()))
                 .thenReturn(true);
         when(jwtService.generateToken(user)).thenReturn("jwt-token");
+        when(jwtService.getExpirationMillis()).thenReturn(900000L);
+        when(refreshTokenService.issue(user, null, null)).thenReturn("refresh-token");
 
         AuthResponse response = authService.login(user.getEmail(), "old");
 
         assertEquals("jwt-token", response.getToken());
+        assertEquals("refresh-token", response.getRefreshToken());
         assertEquals("legacy-hash", user.getPassword());
         verify(passwordPolicyService, never()).validate(any());
         verify(passwordPolicyService, never()).validate(any(), any());
@@ -174,6 +184,32 @@ class AuthServiceTest {
         assertEquals(1, user.getFailedLoginAttempts());
         verify(userRepository).save(user);
         verify(jwtService, never()).generateToken(any());
+    }
+
+    @Test
+    void refreshRotatesRefreshTokenAndReturnsNewAccessToken() {
+        User user = user();
+        when(refreshTokenService.rotate("old-refresh-token", "Mobile", "127.0.0.1"))
+                .thenReturn(new RefreshTokenService.RefreshTokenIssue(user, "new-refresh-token"));
+        when(jwtService.generateToken(user)).thenReturn("new-jwt-token");
+        when(jwtService.getExpirationMillis()).thenReturn(900000L);
+
+        AuthResponse response = authService.refresh(
+                "old-refresh-token",
+                "Mobile",
+                "127.0.0.1"
+        );
+
+        assertEquals("new-jwt-token", response.getToken());
+        assertEquals("new-refresh-token", response.getRefreshToken());
+        assertEquals(900000L, response.getExpiresInMs());
+    }
+
+    @Test
+    void logoutRevokesRefreshToken() {
+        authService.logout("refresh-token");
+
+        verify(refreshTokenService).revoke("refresh-token");
     }
 
     @Test

@@ -49,6 +49,7 @@ public class AuthService {
     private final CustomUserDetailsService userDetailsService;
     private final PasswordPolicyService passwordPolicyService;
     private final VerificationCodeService verificationCodeService;
+    private final RefreshTokenService refreshTokenService;
     private final AuditLogService auditLogService;
 
     @Transactional
@@ -121,6 +122,16 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(String email, String password) {
+        return login(email, password, null, null);
+    }
+
+    @Transactional
+    public AuthResponse login(
+            String email,
+            String password,
+            String userAgent,
+            String ipAddress
+    ) {
 
         CustomUserDetails userDetails =
                 (CustomUserDetails) userDetailsService.loadUserByUsername(email);
@@ -151,8 +162,48 @@ public class AuthService {
 
         String token =
                 jwtService.generateToken(user);
+        String refreshToken =
+                refreshTokenService.issue(user, userAgent, ipAddress);
 
-        return new AuthResponse(token);
+        return AuthResponse.authenticated(
+                token,
+                refreshToken,
+                jwtService.getExpirationMillis()
+        );
+    }
+
+    @Transactional
+    public AuthResponse refresh(
+            String refreshToken,
+            String userAgent,
+            String ipAddress
+    ) {
+        RefreshTokenService.RefreshTokenIssue issue =
+                refreshTokenService.rotate(refreshToken, userAgent, ipAddress);
+
+        String token = jwtService.generateToken(issue.user());
+
+        return AuthResponse.authenticated(
+                token,
+                issue.refreshToken(),
+                jwtService.getExpirationMillis()
+        );
+    }
+
+    @Transactional
+    public void logout(String refreshToken) {
+        refreshTokenService.revoke(refreshToken);
+    }
+
+    @Transactional
+    public void logoutAll(CustomUserDetails currentUser) {
+        if (currentUser == null) {
+            throw new BusinessRuleException("Authenticated user is required");
+        }
+
+        User user = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        refreshTokenService.revokeAll(user);
     }
 
     @Transactional
