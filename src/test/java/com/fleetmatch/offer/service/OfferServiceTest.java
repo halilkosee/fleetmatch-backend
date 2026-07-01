@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,8 +74,12 @@ class OfferServiceTest {
         request.setAmount(BigDecimal.valueOf(2200));
         request.setMessage("Can cover.");
         when(userRepository.findById(fleet.getId())).thenReturn(Optional.of(fleet));
-        when(loadRepository.findById(load.getId())).thenReturn(Optional.of(load));
-        when(offerRepository.existsByLoadIdAndFleetUserId(load.getId(), fleet.getId())).thenReturn(false);
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
+        when(offerRepository.existsByLoadIdAndFleetUserCompanyIdAndStatusIn(
+                load.getId(),
+                fleet.getCompany().getId(),
+                List.of(OfferStatus.PENDING, OfferStatus.SELECTED, OfferStatus.CONFIRMED)
+        )).thenReturn(false);
         when(offerRepository.save(any(Offer.class))).thenAnswer(invocation -> {
             Offer offer = invocation.getArgument(0);
             offer.setId(UUID.randomUUID());
@@ -93,6 +98,33 @@ class OfferServiceTest {
     }
 
     @Test
+    void companyCannotCreateSecondActiveOfferForSameLoad() {
+        User broker = user(CompanyType.BROKER);
+        User fleet = user(CompanyType.FLEET);
+        Load load = load(broker, LoadStatus.POSTED);
+        CreateOfferRequest request = new CreateOfferRequest();
+        request.setAmount(BigDecimal.valueOf(2200));
+        when(userRepository.findById(fleet.getId())).thenReturn(Optional.of(fleet));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
+        when(offerRepository.existsByLoadIdAndFleetUserCompanyIdAndStatusIn(
+                load.getId(),
+                fleet.getCompany().getId(),
+                List.of(OfferStatus.PENDING, OfferStatus.SELECTED, OfferStatus.CONFIRMED)
+        )).thenReturn(true);
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> offerService.createOffer(
+                        load.getId(),
+                        request,
+                        new CustomUserDetails(fleet)
+                )
+        );
+
+        verify(offerRepository, never()).save(any());
+    }
+
+    @Test
     void selectedOfferMovesLoadToAwaitingFleetConfirmation() {
         User broker = user(CompanyType.BROKER);
         User fleet = user(CompanyType.FLEET);
@@ -101,6 +133,7 @@ class OfferServiceTest {
         Conversation conversation = new Conversation();
         conversation.setId(UUID.randomUUID());
         when(userRepository.findById(broker.getId())).thenReturn(Optional.of(broker));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
         when(offerRepository.findByIdWithLoadForUpdate(offer.getId())).thenReturn(Optional.of(offer));
         when(loadRepository.save(load)).thenReturn(load);
         when(offerRepository.save(offer)).thenReturn(offer);
@@ -126,6 +159,7 @@ class OfferServiceTest {
         Offer selected = offer(load, fleet, OfferStatus.SELECTED);
         Offer other = offer(load, otherFleet, OfferStatus.PENDING);
         when(userRepository.findById(fleet.getId())).thenReturn(Optional.of(fleet));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
         when(offerRepository.findByIdWithLoadForUpdate(selected.getId())).thenReturn(Optional.of(selected));
         when(offerRepository.findByLoadIdAndStatus(load.getId(), OfferStatus.PENDING)).thenReturn(List.of(other));
         when(loadRepository.save(load)).thenReturn(load);
@@ -150,6 +184,7 @@ class OfferServiceTest {
         Load load = load(broker, LoadStatus.AWAITING_FLEET_CONFIRMATION);
         Offer selected = offer(load, fleet, OfferStatus.SELECTED);
         when(userRepository.findById(fleet.getId())).thenReturn(Optional.of(fleet));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
         when(offerRepository.findByIdWithLoadForUpdate(selected.getId())).thenReturn(Optional.of(selected));
         when(loadRepository.save(load)).thenReturn(load);
         when(offerRepository.save(selected)).thenReturn(selected);
@@ -166,22 +201,23 @@ class OfferServiceTest {
     }
 
     @Test
-    void confirmedOfferCannotBeConfirmedAgain() {
+    void repeatedConfirmIsIdempotentAfterBooking() {
         User broker = user(CompanyType.BROKER);
         User fleet = user(CompanyType.FLEET);
         Load load = load(broker, LoadStatus.BOOKED);
         Offer confirmed = offer(load, fleet, OfferStatus.CONFIRMED);
         when(userRepository.findById(fleet.getId())).thenReturn(Optional.of(fleet));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
         when(offerRepository.findByIdWithLoadForUpdate(confirmed.getId())).thenReturn(Optional.of(confirmed));
 
-        assertThrows(
-                BusinessRuleException.class,
-                () -> offerService.confirmAssignment(
-                        load.getId(),
-                        confirmed.getId(),
-                        new CustomUserDetails(fleet)
-                )
+        OfferResponse response = offerService.confirmAssignment(
+                load.getId(),
+                confirmed.getId(),
+                new CustomUserDetails(fleet)
         );
+
+        assertEquals(OfferStatus.CONFIRMED, response.getStatus());
+        verify(offerRepository, never()).save(confirmed);
     }
 
     private User user(CompanyType companyType) {

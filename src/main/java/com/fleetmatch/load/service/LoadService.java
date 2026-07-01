@@ -252,6 +252,8 @@ public class LoadService {
                         "User not found"
                 ));
 
+        userVerificationGuard.requireVerifiedForCoreWorkflow(user);
+
         return toResponse(
                 load,
                 user
@@ -271,6 +273,8 @@ public class LoadService {
                 new ResourceNotFoundException(
                         "User not found"
                 ));
+
+        userVerificationGuard.requireVerifiedForCoreWorkflow(user);
 
         List<Load> loads;
 
@@ -327,10 +331,6 @@ public class LoadService {
         Load load = loadRepository.findByIdForUpdate(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
 
-        if (load.getStatus() != LoadStatus.BOOKED) {
-            throw new BusinessRuleException("Only booked loads can be started");
-        }
-
         if (user.getPlatformRole() != PlatformRole.ADMIN) {
             Offer acceptedOffer = offerRepository.findFirstByLoadIdAndStatus(
                     load.getId(),
@@ -341,6 +341,14 @@ public class LoadService {
                     !acceptedOffer.getFleetUser().getCompany().getId().equals(user.getCompany().getId())) {
                 throw new AccessDeniedException("Only the accepted fleet driver can start this load");
             }
+        }
+
+        if (load.getStatus() == LoadStatus.IN_TRANSIT) {
+            return toResponse(load, user);
+        }
+
+        if (load.getStatus() != LoadStatus.BOOKED) {
+            throw new BusinessRuleException("Only booked loads can be started");
         }
 
         load.setStatus(LoadStatus.IN_TRANSIT);
@@ -372,10 +380,6 @@ public class LoadService {
         Load load = loadRepository.findByIdForUpdate(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
 
-        if (load.getStatus() != LoadStatus.IN_TRANSIT) {
-            throw new BusinessRuleException("Only in-transit loads can be delivered");
-        }
-
         if (user.getPlatformRole() != PlatformRole.ADMIN) {
             Offer acceptedOffer = offerRepository.findFirstByLoadIdAndStatus(
                     load.getId(),
@@ -386,6 +390,14 @@ public class LoadService {
                     !acceptedOffer.getFleetUser().getCompany().getId().equals(user.getCompany().getId())) {
                 throw new AccessDeniedException("Only the accepted fleet driver can deliver this load");
             }
+        }
+
+        if (load.getStatus() == LoadStatus.DELIVERED) {
+            return toResponse(load, user);
+        }
+
+        if (load.getStatus() != LoadStatus.IN_TRANSIT) {
+            throw new BusinessRuleException("Only in-transit loads can be delivered");
         }
 
         load.setStatus(LoadStatus.DELIVERED);
@@ -415,21 +427,23 @@ public class LoadService {
         Load load = loadRepository.findByIdForUpdate(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
 
-        if (load.getStatus() == LoadStatus.IN_TRANSIT ||
-                load.getStatus() == LoadStatus.DELIVERED) {
-            throw new BusinessRuleException("In-transit or delivered loads cannot be cancelled");
-        }
-
-        if (load.getStatus() == LoadStatus.CANCELLED) {
-            throw new BusinessRuleException("Load is already cancelled");
-        }
-
         if (user.getPlatformRole() != PlatformRole.ADMIN) {
+            userVerificationGuard.requireVerifiedForCoreWorkflow(user);
+
             if (user.getCompany() == null ||
                     user.getCompany().getType() != CompanyType.BROKER ||
                     !load.getBrokerCompany().getId().equals(user.getCompany().getId())) {
                 throw new AccessDeniedException("Only the broker owner of this load can cancel it");
             }
+        }
+
+        if (load.getStatus() == LoadStatus.CANCELLED) {
+            return toResponse(load, user);
+        }
+
+        if (load.getStatus() == LoadStatus.IN_TRANSIT ||
+                load.getStatus() == LoadStatus.DELIVERED) {
+            throw new BusinessRuleException("In-transit or delivered loads cannot be cancelled");
         }
 
         load.setStatus(LoadStatus.CANCELLED);

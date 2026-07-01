@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import jakarta.persistence.LockModeType;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -37,6 +38,12 @@ public interface OfferRepository extends JpaRepository<Offer, UUID> {
     boolean existsByLoadIdAndFleetUserId(
             UUID loadId,
             UUID FleetUserId
+    );
+
+    boolean existsByLoadIdAndFleetUserCompanyIdAndStatusIn(
+            UUID loadId,
+            UUID fleetCompanyId,
+            Collection<OfferStatus> statuses
     );
 
     long countByStatus(OfferStatus status);

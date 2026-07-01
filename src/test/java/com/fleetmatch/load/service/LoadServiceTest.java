@@ -37,6 +37,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -110,6 +111,7 @@ class LoadServiceTest {
         List<LoadResponse> responses = loadService.searchLoads(null, null, null, new CustomUserDetails(fleet));
 
         assertEquals(1, responses.size());
+        verify(userVerificationGuard).requireVerifiedForCoreWorkflow(fleet);
     }
 
     @Test
@@ -141,6 +143,39 @@ class LoadServiceTest {
                 BusinessRuleException.class,
                 () -> loadService.cancelLoad(load.getId(), new CustomUserDetails(broker))
         );
+    }
+
+    @Test
+    void repeatedCancelReturnsCurrentStateWithoutDuplicateSideEffects() {
+        User broker = user(CompanyType.BROKER);
+        Load load = load(broker, LoadStatus.CANCELLED);
+        when(userRepository.findById(broker.getId())).thenReturn(Optional.of(broker));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
+        when(subscriptionAccessService.canViewContactInfo(broker.getCompany().getId())).thenReturn(false);
+
+        LoadResponse response = loadService.cancelLoad(load.getId(), new CustomUserDetails(broker));
+
+        assertEquals(LoadStatus.CANCELLED, response.getStatus());
+        verify(loadRepository, never()).save(load);
+        verify(notificationService, never()).createForCompany(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void repeatedDeliveryReturnsCurrentStateWithoutDuplicateSideEffects() {
+        User fleet = user(CompanyType.FLEET);
+        Load load = load(user(CompanyType.BROKER), LoadStatus.DELIVERED);
+        Offer confirmed = offer(load, fleet, OfferStatus.CONFIRMED);
+        when(userRepository.findById(fleet.getId())).thenReturn(Optional.of(fleet));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
+        when(offerRepository.findFirstByLoadIdAndStatus(load.getId(), OfferStatus.CONFIRMED))
+                .thenReturn(Optional.of(confirmed));
+        when(subscriptionAccessService.canViewContactInfo(fleet.getCompany().getId())).thenReturn(false);
+
+        LoadResponse response = loadService.deliverLoad(load.getId(), new CustomUserDetails(fleet));
+
+        assertEquals(LoadStatus.DELIVERED, response.getStatus());
+        verify(loadRepository, never()).save(load);
+        verify(notificationService, never()).createForCompany(any(), any(), any(), any(), any(), any());
     }
 
     private CreateLoadRequest createLoadRequest() {

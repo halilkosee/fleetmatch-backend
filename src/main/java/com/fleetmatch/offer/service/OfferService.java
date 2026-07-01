@@ -77,7 +77,7 @@ public class OfferService {
                         user.getCompany()
                 );
 
-        Load load = loadRepository.findById(loadId)
+        Load load = loadRepository.findByIdForUpdate(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
 
         if (load.getStatus() != LoadStatus.POSTED) {
@@ -88,13 +88,18 @@ public class OfferService {
             throw new BusinessRuleException("You cannot submit an offer to your own load");
         }
 
-        boolean alreadyOffered = offerRepository.existsByLoadIdAndFleetUserId(
+        boolean alreadyOffered = offerRepository.existsByLoadIdAndFleetUserCompanyIdAndStatusIn(
                 load.getId(),
-                user.getId()
+                user.getCompany().getId(),
+                List.of(
+                        OfferStatus.PENDING,
+                        OfferStatus.SELECTED,
+                        OfferStatus.CONFIRMED
+                )
         );
 
         if (alreadyOffered) {
-            throw new BusinessRuleException("You have already submitted an offer for this load");
+            throw new BusinessRuleException("Your company already has an active offer for this load");
         }
 
         Offer offer = new Offer();
@@ -168,14 +173,15 @@ public class OfferService {
             throw new AccessDeniedException("Only brokers can select offers");
         }
 
+        Load load = loadRepository.findByIdForUpdate(loadId)
+                .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
+
         Offer offer = offerRepository.findByIdWithLoadForUpdate(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
 
         if (!offer.getLoad().getId().equals(loadId)) {
             throw new AccessDeniedException("Offer does not belong to this load");
         }
-
-        Load load = offer.getLoad();
 
         if (!load.getBrokerCompany().getId().equals(user.getCompany().getId())) {
             throw new AccessDeniedException("You can only accept offers for your own loads");
@@ -233,6 +239,9 @@ public class OfferService {
             throw new AccessDeniedException("Only fleets can confirm assignments");
         }
 
+        Load load = loadRepository.findByIdForUpdate(loadId)
+                .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
+
         Offer offer = offerRepository.findByIdWithLoadForUpdate(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
 
@@ -246,9 +255,11 @@ public class OfferService {
             throw new AccessDeniedException("You can only confirm your own assignment");
         }
 
-        Load load = offer.getLoad();
-
         if (offer.getStatus() != OfferStatus.SELECTED) {
+            if (offer.getStatus() == OfferStatus.CONFIRMED &&
+                    load.getStatus() == LoadStatus.BOOKED) {
+                return toResponse(offer);
+            }
             throw new BusinessRuleException("Only selected offers can be confirmed");
         }
 
@@ -317,10 +328,15 @@ public class OfferService {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+        userVerificationGuard.requireVerifiedForCoreWorkflow(user);
+
         if (user.getCompany() == null ||
                 user.getCompany().getType() != CompanyType.FLEET) {
             throw new AccessDeniedException("Only fleets can decline assignments");
         }
+
+        Load load = loadRepository.findByIdForUpdate(loadId)
+                .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
 
         Offer offer = offerRepository.findByIdWithLoadForUpdate(offerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
@@ -335,9 +351,11 @@ public class OfferService {
             throw new AccessDeniedException("You can only decline your own assignment");
         }
 
-        Load load = offer.getLoad();
-
         if (offer.getStatus() != OfferStatus.SELECTED) {
+            if (offer.getStatus() == OfferStatus.REJECTED &&
+                    load.getStatus() == LoadStatus.POSTED) {
+                return toResponse(offer);
+            }
             throw new BusinessRuleException("Only selected offers can be declined");
         }
 
