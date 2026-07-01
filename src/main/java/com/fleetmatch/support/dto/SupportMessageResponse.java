@@ -1,6 +1,6 @@
 package com.fleetmatch.support.dto;
 
-import com.fleetmatch.support.entity.SupportMessageSenderType;
+import com.fleetmatch.support.message.entity.SupportMessageSenderType;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

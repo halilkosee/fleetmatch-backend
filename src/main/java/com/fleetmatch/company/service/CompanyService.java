@@ -20,8 +20,8 @@ import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.entity.CompanyUserRole;
 import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
-import com.fleetmatch.notification.entity.NotificationType;
-import com.fleetmatch.notification.service.NotificationService;
+import com.fleetmatch.notification.event.NotificationType;
+import com.fleetmatch.notification.inapp.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -48,6 +48,10 @@ public class CompanyService {
         verifyCompany(companyId, null);
     }
 
+    /**
+     * Approves a company for controlled marketplace access and advances all
+     * non-suspended company users to the approved account state.
+     */
     @Transactional
     public void verifyCompany(UUID companyId, CustomUserDetails currentUser) {
 
@@ -106,6 +110,10 @@ public class CompanyService {
         rejectCompany(companyId, null, null, currentUser);
     }
 
+    /**
+     * Rejects operational verification while preserving the admin reason and
+     * notes that drive the user's resubmission path.
+     */
     @Transactional
     public void rejectCompany(
             UUID companyId,

@@ -7,7 +7,7 @@ import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.company.review.service.CompanyReviewEventService;
 import com.fleetmatch.email.service.EmailTemplateService;
-import com.fleetmatch.notification.service.NotificationService;
+import com.fleetmatch.notification.inapp.service.NotificationService;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;

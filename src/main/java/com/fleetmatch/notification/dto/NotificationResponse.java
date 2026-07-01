@@ -1,6 +1,6 @@
 package com.fleetmatch.notification.dto;
 
-import com.fleetmatch.notification.entity.NotificationType;
+import com.fleetmatch.notification.event.NotificationType;
 import lombok.Builder;
 import lombok.Getter;
 

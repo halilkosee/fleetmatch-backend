@@ -1,9 +1,9 @@
 package com.fleetmatch.support.dto;
 
 import com.fleetmatch.company.entity.CompanyType;
-import com.fleetmatch.support.entity.SupportTicketCategory;
-import com.fleetmatch.support.entity.SupportTicketPriority;
-import com.fleetmatch.support.entity.SupportTicketStatus;
+import com.fleetmatch.support.category.SupportTicketCategory;
+import com.fleetmatch.support.category.SupportTicketPriority;
+import com.fleetmatch.support.ticket.entity.SupportTicketStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

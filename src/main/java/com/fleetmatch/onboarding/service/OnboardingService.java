@@ -2,7 +2,7 @@ package com.fleetmatch.onboarding.service;
 
 import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
-import com.fleetmatch.company.document.repository.CompanyDocumentRepository;
+import com.fleetmatch.company.documents.repository.CompanyDocumentRepository;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;

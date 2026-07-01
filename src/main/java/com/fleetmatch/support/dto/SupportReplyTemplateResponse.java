@@ -1,6 +1,6 @@
 package com.fleetmatch.support.dto;
 
-import com.fleetmatch.support.entity.SupportTicketCategory;
+import com.fleetmatch.support.category.SupportTicketCategory;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 

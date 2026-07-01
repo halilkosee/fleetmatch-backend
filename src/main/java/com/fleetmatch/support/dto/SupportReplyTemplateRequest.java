@@ -1,6 +1,6 @@
 package com.fleetmatch.support.dto;
 
-import com.fleetmatch.support.entity.SupportTicketCategory;
+import com.fleetmatch.support.category.SupportTicketCategory;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;

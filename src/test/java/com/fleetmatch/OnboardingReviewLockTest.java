@@ -1,9 +1,9 @@
 package com.fleetmatch;
 
 import com.fleetmatch.common.exception.BusinessRuleException;
-import com.fleetmatch.company.document.repository.CompanyDocumentRepository;
-import com.fleetmatch.company.document.service.CompanyDocumentService;
-import com.fleetmatch.company.document.service.DocumentStorageService;
+import com.fleetmatch.company.documents.repository.CompanyDocumentRepository;
+import com.fleetmatch.company.documents.service.CompanyDocumentService;
+import com.fleetmatch.company.documents.service.DocumentStorageService;
 import com.fleetmatch.company.dto.UpdateCompanyProfileRequest;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyType;

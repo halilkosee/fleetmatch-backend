@@ -11,7 +11,7 @@ import com.fleetmatch.load.entity.LoadStatus;
 import com.fleetmatch.load.repository.LoadRepository;
 import com.fleetmatch.messaging.entity.Conversation;
 import com.fleetmatch.messaging.service.MessagingService;
-import com.fleetmatch.notification.service.NotificationService;
+import com.fleetmatch.notification.inapp.service.NotificationService;
 import com.fleetmatch.offer.dto.CreateOfferRequest;
 import com.fleetmatch.offer.dto.OfferResponse;
 import com.fleetmatch.offer.entity.Offer;

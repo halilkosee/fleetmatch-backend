@@ -1,6 +1,6 @@
 package com.fleetmatch.admin.dto;
 
-import com.fleetmatch.company.document.dto.CompanyDocumentResponse;
+import com.fleetmatch.company.documents.dto.CompanyDocumentResponse;
 import com.fleetmatch.company.dto.CompanyProfileResponse;
 import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
