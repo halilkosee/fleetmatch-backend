@@ -31,11 +31,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -125,6 +127,31 @@ class OfferServiceTest {
     }
 
     @Test
+    void expiredPostedLoadCannotReceiveOfferBeforeRecoveryJobRuns() {
+        User broker = user(CompanyType.BROKER);
+        User fleet = user(CompanyType.FLEET);
+        Load load = load(broker, LoadStatus.POSTED);
+        load.setOfferDeadlineAt(LocalDateTime.now().minusMinutes(1));
+        CreateOfferRequest request = new CreateOfferRequest();
+        request.setAmount(BigDecimal.valueOf(2200));
+        when(userRepository.findById(fleet.getId())).thenReturn(Optional.of(fleet));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> offerService.createOffer(
+                        load.getId(),
+                        request,
+                        new CustomUserDetails(fleet)
+                )
+        );
+
+        assertEquals(LoadStatus.EXPIRED, load.getStatus());
+        verify(loadRepository).save(load);
+        verify(offerRepository, never()).save(any());
+    }
+
+    @Test
     void selectedOfferMovesLoadToAwaitingFleetConfirmation() {
         User broker = user(CompanyType.BROKER);
         User fleet = user(CompanyType.FLEET);
@@ -148,6 +175,30 @@ class OfferServiceTest {
         assertEquals(OfferStatus.SELECTED, response.getStatus());
         assertEquals(LoadStatus.AWAITING_FLEET_CONFIRMATION, load.getStatus());
         verify(messagingService).createConversationForSelectedOffer(offer);
+    }
+
+    @Test
+    void expiredPostedLoadCannotBeSelectedBeforeRecoveryJobRuns() {
+        User broker = user(CompanyType.BROKER);
+        User fleet = user(CompanyType.FLEET);
+        Load load = load(broker, LoadStatus.POSTED);
+        load.setOfferDeadlineAt(LocalDateTime.now().minusMinutes(1));
+        Offer offer = offer(load, fleet, OfferStatus.PENDING);
+        when(userRepository.findById(broker.getId())).thenReturn(Optional.of(broker));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
+        when(offerRepository.findByIdWithLoadForUpdate(offer.getId())).thenReturn(Optional.of(offer));
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> offerService.selectOffer(
+                        load.getId(),
+                        offer.getId(),
+                        new CustomUserDetails(broker)
+                )
+        );
+
+        assertEquals(LoadStatus.EXPIRED, load.getStatus());
+        verify(loadRepository).save(load);
     }
 
     @Test
@@ -218,6 +269,30 @@ class OfferServiceTest {
 
         assertEquals(OfferStatus.CONFIRMED, response.getStatus());
         verify(offerRepository, never()).save(confirmed);
+    }
+
+    @Test
+    void lateFleetConfirmReleasesSelectionAndRepostsLoad() {
+        User broker = user(CompanyType.BROKER);
+        User fleet = user(CompanyType.FLEET);
+        Load load = load(broker, LoadStatus.AWAITING_FLEET_CONFIRMATION);
+        load.setConfirmationDeadlineAt(LocalDateTime.now().minusMinutes(1));
+        Offer selected = offer(load, fleet, OfferStatus.SELECTED);
+        when(userRepository.findById(fleet.getId())).thenReturn(Optional.of(fleet));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
+        when(offerRepository.findByIdWithLoadForUpdate(selected.getId())).thenReturn(Optional.of(selected));
+        when(offerRepository.save(selected)).thenReturn(selected);
+
+        OfferResponse response = offerService.confirmAssignment(
+                load.getId(),
+                selected.getId(),
+                new CustomUserDetails(fleet)
+        );
+
+        assertEquals(OfferStatus.REJECTED, response.getStatus());
+        assertEquals(LoadStatus.POSTED, load.getStatus());
+        assertNotNull(load.getOfferDeadlineAt());
+        verify(messagingService).archiveConversation(load.getId());
     }
 
     private User user(CompanyType companyType) {

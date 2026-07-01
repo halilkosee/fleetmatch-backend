@@ -10,6 +10,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Getter
@@ -62,6 +63,8 @@ public class CreateLoadRequest {
 
     @NotBlank
     private String referenceNumber;
+
+    private LocalDateTime offerDeadlineAt;
 
     private String pickupStreetAddress;
     private String pickupZipCode;

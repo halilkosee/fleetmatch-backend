@@ -59,6 +59,18 @@ public interface LoadRepository extends JpaRepository<Load, UUID>, JpaSpecificat
     Page<Load> findByBrokerCompanyId(UUID brokerCompanyId, Pageable pageable);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<Load> findTop50ByStatusAndOfferDeadlineAtBefore(
+            LoadStatus status,
+            LocalDateTime deadline
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    List<Load> findTop50ByStatusAndConfirmationDeadlineAtBefore(
+            LoadStatus status,
+            LocalDateTime deadline
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select l from Load l where l.id = :loadId")
     Optional<Load> findByIdForUpdate(UUID loadId);
 }

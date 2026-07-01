@@ -9,6 +9,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Getter
@@ -71,6 +72,12 @@ public class Load extends BaseEntity {
 
     @Column(length = 1000)
     private String description;
+
+    private LocalDateTime offerDeadlineAt;
+
+    private LocalDateTime confirmationDeadlineAt;
+
+    private LocalDateTime expiredAt;
 
     private String pickupStreetAddress;
     private String pickupZipCode;

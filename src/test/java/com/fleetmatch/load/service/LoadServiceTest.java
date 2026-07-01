@@ -27,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,6 +36,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -80,6 +82,7 @@ class LoadServiceTest {
 
         assertEquals(LoadStatus.POSTED, response.getStatus());
         assertEquals("Austin", response.getPickupCity());
+        assertNotNull(response.getOfferDeadlineAt());
         verify(subscriptionValidationService).validateMonthlyLoadLimit(broker.getCompany());
         verify(loadRepository).save(any(Load.class));
     }
@@ -112,6 +115,69 @@ class LoadServiceTest {
 
         assertEquals(1, responses.size());
         verify(userVerificationGuard).requireVerifiedForCoreWorkflow(fleet);
+    }
+
+    @Test
+    void nonAdminCannotSearchNonPostedLoads() {
+        User fleet = user(CompanyType.FLEET);
+        when(userRepository.findById(fleet.getId())).thenReturn(Optional.of(fleet));
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> loadService.searchLoadsPaged(
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        LoadStatus.BOOKED,
+                        null,
+                        org.springframework.data.domain.Pageable.unpaged(),
+                        new CustomUserDetails(fleet)
+                )
+        );
+    }
+
+    @Test
+    void unrelatedCompanyCannotViewBookedLoadDetails() {
+        User broker = user(CompanyType.BROKER);
+        User unrelatedFleet = user(CompanyType.FLEET);
+        Load load = load(broker, LoadStatus.BOOKED);
+        when(loadRepository.findById(load.getId())).thenReturn(Optional.of(load));
+        when(userRepository.findById(unrelatedFleet.getId())).thenReturn(Optional.of(unrelatedFleet));
+        when(offerRepository.findFirstByLoadIdAndStatus(load.getId(), OfferStatus.CONFIRMED))
+                .thenReturn(Optional.empty());
+        when(offerRepository.findFirstByLoadIdAndStatus(load.getId(), OfferStatus.SELECTED))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                AccessDeniedException.class,
+                () -> loadService.getLoadById(load.getId(), new CustomUserDetails(unrelatedFleet))
+        );
+    }
+
+    @Test
+    void duplicateLoadGetsFreshOfferDeadline() {
+        User broker = user(CompanyType.BROKER);
+        Load source = load(broker, LoadStatus.EXPIRED);
+        source.setOfferDeadlineAt(java.time.LocalDateTime.now().minusDays(1));
+        when(userRepository.findById(broker.getId())).thenReturn(Optional.of(broker));
+        when(loadRepository.findById(source.getId())).thenReturn(Optional.of(source));
+        when(loadRepository.save(any(Load.class))).thenAnswer(invocation -> {
+            Load duplicate = invocation.getArgument(0);
+            duplicate.setId(UUID.randomUUID());
+            return duplicate;
+        });
+        when(subscriptionAccessService.canViewContactInfo(broker.getCompany().getId())).thenReturn(false);
+
+        LoadResponse response = loadService.duplicateLoad(source.getId(), new CustomUserDetails(broker));
+
+        assertEquals(LoadStatus.POSTED, response.getStatus());
+        assertNotNull(response.getOfferDeadlineAt());
     }
 
     @Test
@@ -158,6 +224,20 @@ class LoadServiceTest {
         assertEquals(LoadStatus.CANCELLED, response.getStatus());
         verify(loadRepository, never()).save(load);
         verify(notificationService, never()).createForCompany(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void expiredLoadCancelDoesNotChangeTerminalState() {
+        User broker = user(CompanyType.BROKER);
+        Load load = load(broker, LoadStatus.EXPIRED);
+        when(userRepository.findById(broker.getId())).thenReturn(Optional.of(broker));
+        when(loadRepository.findByIdForUpdate(load.getId())).thenReturn(Optional.of(load));
+        when(subscriptionAccessService.canViewContactInfo(broker.getCompany().getId())).thenReturn(false);
+
+        LoadResponse response = loadService.cancelLoad(load.getId(), new CustomUserDetails(broker));
+
+        assertEquals(LoadStatus.EXPIRED, response.getStatus());
+        verify(loadRepository, never()).save(load);
     }
 
     @Test

@@ -41,6 +41,7 @@ import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -59,6 +60,8 @@ import com.fleetmatch.email.service.EmailTemplateService;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -82,6 +85,9 @@ public class AdminService {
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
     private final EmailTemplateService emailTemplateService;
+
+    @Value("${fleetmatch.workflow.load-offer-expiration-ms:172800000}")
+    private long loadOfferExpirationMs = 172800000L;
 
     public void approveUser(UUID userId, CustomUserDetails currentUser) {
 
@@ -461,6 +467,10 @@ public class AdminService {
         Load load = offer.getLoad();
         if (offer.getStatus() == OfferStatus.SELECTED) {
             load.setStatus(LoadStatus.POSTED);
+            load.setConfirmationDeadlineAt(null);
+            load.setOfferDeadlineAt(
+                    LocalDateTime.now().plus(Duration.ofMillis(loadOfferExpirationMs))
+            );
             loadRepository.save(load);
             messagingService.archiveConversation(load.getId());
         }

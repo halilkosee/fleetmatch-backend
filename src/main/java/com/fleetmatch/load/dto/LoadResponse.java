@@ -7,6 +7,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.UUID;
 
@@ -74,6 +75,10 @@ public class LoadResponse {
     private boolean dockHighRequired;
     private boolean residentialDelivery;
 
+    private LocalDateTime offerDeadlineAt;
+    private LocalDateTime confirmationDeadlineAt;
+    private LocalDateTime expiredAt;
+
     public LoadResponse(
             UUID id,
             String pickupCity,
@@ -113,5 +118,8 @@ public class LoadResponse {
         this.brokerCompanyName = brokerCompanyName;
         this.brokerEmail = brokerEmail;
         this.brokerPhone = brokerPhone;
+        this.offerDeadlineAt = null;
+        this.confirmationDeadlineAt = null;
+        this.expiredAt = null;
     }
 }

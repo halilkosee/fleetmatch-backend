@@ -25,6 +25,7 @@ import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.repository.UserRepository;
 import com.fleetmatch.user.service.UserVerificationGuard;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -35,7 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 
 @Service
@@ -52,6 +55,9 @@ public class LoadService {
     private final UserVerificationGuard userVerificationGuard;
     private final AuditLogService auditLogService;
     private final NotificationService notificationService;
+
+    @Value("${fleetmatch.workflow.load-offer-expiration-ms:172800000}")
+    private long loadOfferExpirationMs = 172800000L;
 
     @Transactional
     public LoadResponse createLoad(
@@ -105,6 +111,7 @@ public class LoadService {
         load.setCommodity(request.getCommodity());
         load.setReferenceNumber(request.getReferenceNumber());
         load.setNotes(request.getNotes());
+        load.setOfferDeadlineAt(resolveOfferDeadline(request.getOfferDeadlineAt()));
         applyAdvancedFields(load, request);
 
         Load saved = loadRepository.save(load);
@@ -137,6 +144,12 @@ public class LoadService {
 
         userVerificationGuard.requireVerifiedForCoreWorkflow(user);
 
+        if (user.getPlatformRole() != PlatformRole.ADMIN &&
+                status != null &&
+                status != LoadStatus.POSTED) {
+            throw new AccessDeniedException("Only admins can search non-posted loads");
+        }
+
         Specification<Load> specification = dynamicSearchSpecification(
                 pickupState,
                 deliveryState,
@@ -151,8 +164,9 @@ public class LoadService {
                 keyword
         );
 
-        Pageable limitedPageable = subscriptionValidationService
-                .applyLoadVisibilityLimit(user.getCompany(), pageable);
+        Pageable limitedPageable = user.getPlatformRole() == PlatformRole.ADMIN
+                ? pageable
+                : subscriptionValidationService.applyLoadVisibilityLimit(user.getCompany(), pageable);
 
         return loadRepository.findAll(specification, limitedPageable)
                 .map(load -> toResponse(load, user));
@@ -195,6 +209,9 @@ public class LoadService {
         duplicate.setNotes(source.getNotes());
         copyAdvancedFields(source, duplicate);
         duplicate.setStatus(LoadStatus.POSTED);
+        duplicate.setOfferDeadlineAt(resolveOfferDeadline(null));
+        duplicate.setConfirmationDeadlineAt(null);
+        duplicate.setExpiredAt(null);
 
         Load saved = loadRepository.save(duplicate);
         auditLogService.log(
@@ -253,6 +270,11 @@ public class LoadService {
                 ));
 
         userVerificationGuard.requireVerifiedForCoreWorkflow(user);
+
+        if (user.getPlatformRole() != PlatformRole.ADMIN &&
+                !canViewLoadDetails(load, user)) {
+            throw new AccessDeniedException("You cannot access this load");
+        }
 
         return toResponse(
                 load,
@@ -441,6 +463,10 @@ public class LoadService {
             return toResponse(load, user);
         }
 
+        if (load.getStatus() == LoadStatus.EXPIRED) {
+            return toResponse(load, user);
+        }
+
         if (load.getStatus() == LoadStatus.IN_TRANSIT ||
                 load.getStatus() == LoadStatus.DELIVERED) {
             throw new BusinessRuleException("In-transit or delivered loads cannot be cancelled");
@@ -539,8 +565,43 @@ public class LoadService {
                 load.isLiftgateRequired(),
                 load.isPalletJackRequired(),
                 load.isDockHighRequired(),
-                load.isResidentialDelivery()
+                load.isResidentialDelivery(),
+                load.getOfferDeadlineAt(),
+                load.getConfirmationDeadlineAt(),
+                load.getExpiredAt()
         );
+    }
+
+    private LocalDateTime resolveOfferDeadline(LocalDateTime requestedDeadline) {
+        if (requestedDeadline != null) {
+            if (!requestedDeadline.isAfter(LocalDateTime.now())) {
+                throw new BusinessRuleException("Offer deadline must be in the future");
+            }
+            return requestedDeadline;
+        }
+
+        return LocalDateTime.now().plus(Duration.ofMillis(loadOfferExpirationMs));
+    }
+
+    private boolean canViewLoadDetails(Load load, User user) {
+        if (load.getStatus() == LoadStatus.POSTED) {
+            return true;
+        }
+
+        if (user.getCompany() == null) {
+            return false;
+        }
+
+        if (load.getBrokerCompany().getId().equals(user.getCompany().getId())) {
+            return true;
+        }
+
+        return offerRepository.findFirstByLoadIdAndStatus(load.getId(), OfferStatus.CONFIRMED)
+                .or(() -> offerRepository.findFirstByLoadIdAndStatus(load.getId(), OfferStatus.SELECTED))
+                .map(Offer::getFleetUser)
+                .map(User::getCompany)
+                .map(company -> company.getId().equals(user.getCompany().getId()))
+                .orElse(false);
     }
 
     private Specification<Load> dynamicSearchSpecification(

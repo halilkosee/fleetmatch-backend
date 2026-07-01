@@ -95,3 +95,9 @@ fleetmatch:
     max-file-size-bytes: ${DOCUMENT_MAX_FILE_SIZE_BYTES:10485760}
   rate-limit:
     store: ${RATE_LIMIT_STORE:memory}
+  workflow:
+    load-offer-expiration-ms: ${LOAD_OFFER_EXPIRATION_MS:172800000}
+    fleet-confirmation-timeout-ms: ${FLEET_CONFIRMATION_TIMEOUT_MS:14400000}
+    recovery:
+      initial-delay-ms: ${WORKFLOW_RECOVERY_INITIAL_DELAY_MS:60000}
+      fixed-delay-ms: ${WORKFLOW_RECOVERY_FIXED_DELAY_MS:300000}

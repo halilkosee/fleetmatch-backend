@@ -11,5 +11,7 @@ public enum LoadStatus {
 
     DELIVERED,
 
-    CANCELLED
+    CANCELLED,
+
+    EXPIRED
 }

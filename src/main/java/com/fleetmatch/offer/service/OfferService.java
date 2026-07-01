@@ -24,12 +24,15 @@ import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.repository.UserRepository;
 import com.fleetmatch.user.service.UserVerificationGuard;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +48,13 @@ public class OfferService {
     private final NotificationService notificationService;
     private final AuditLogService auditLogService;
 
-    @Transactional
+    @Value("${fleetmatch.workflow.fleet-confirmation-timeout-ms:14400000}")
+    private long fleetConfirmationTimeoutMs = 14400000L;
+
+    @Value("${fleetmatch.workflow.load-offer-expiration-ms:172800000}")
+    private long loadOfferExpirationMs = 172800000L;
+
+    @Transactional(noRollbackFor = BusinessRuleException.class)
     public OfferResponse createOffer(
             UUID loadId,
             CreateOfferRequest request,
@@ -79,6 +88,10 @@ public class OfferService {
 
         Load load = loadRepository.findByIdForUpdate(loadId)
                 .orElseThrow(() -> new ResourceNotFoundException("Load not found"));
+
+        if (expireIfOfferDeadlinePassed(load)) {
+            throw new BusinessRuleException("Load offer deadline has expired");
+        }
 
         if (load.getStatus() != LoadStatus.POSTED) {
             throw new BusinessRuleException("Offers can only be submitted for posted loads");
@@ -149,7 +162,7 @@ public class OfferService {
                 .toList();
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = BusinessRuleException.class)
     public OfferResponse acceptOffer(
             UUID loadId,
             UUID offerId,
@@ -158,7 +171,7 @@ public class OfferService {
         return selectOffer(loadId, offerId, currentUser);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = BusinessRuleException.class)
     public OfferResponse selectOffer(
             UUID loadId,
             UUID offerId,
@@ -187,6 +200,10 @@ public class OfferService {
             throw new AccessDeniedException("You can only accept offers for your own loads");
         }
 
+        if (expireIfOfferDeadlinePassed(load)) {
+            throw new BusinessRuleException("Load offer deadline has expired");
+        }
+
         if (offer.getStatus() != OfferStatus.PENDING) {
             throw new BusinessRuleException("Only pending offers can be selected");
         }
@@ -197,6 +214,9 @@ public class OfferService {
 
         offer.setStatus(OfferStatus.SELECTED);
         load.setStatus(LoadStatus.AWAITING_FLEET_CONFIRMATION);
+        load.setConfirmationDeadlineAt(
+                LocalDateTime.now().plus(Duration.ofMillis(fleetConfirmationTimeoutMs))
+        );
 
         loadRepository.save(load);
 
@@ -255,6 +275,11 @@ public class OfferService {
             throw new AccessDeniedException("You can only confirm your own assignment");
         }
 
+        if (isConfirmationDeadlinePassed(load)) {
+            releaseTimedOutConfirmation(load, offer);
+            return toResponse(offer);
+        }
+
         if (offer.getStatus() != OfferStatus.SELECTED) {
             if (offer.getStatus() == OfferStatus.CONFIRMED &&
                     load.getStatus() == LoadStatus.BOOKED) {
@@ -269,6 +294,7 @@ public class OfferService {
 
         offer.setStatus(OfferStatus.CONFIRMED);
         load.setStatus(LoadStatus.BOOKED);
+        load.setConfirmationDeadlineAt(null);
 
         List<Offer> otherOffers = offerRepository.findByLoadIdAndStatus(
                 load.getId(),
@@ -365,6 +391,10 @@ public class OfferService {
 
         offer.setStatus(OfferStatus.REJECTED);
         load.setStatus(LoadStatus.POSTED);
+        load.setConfirmationDeadlineAt(null);
+        load.setOfferDeadlineAt(
+                LocalDateTime.now().plus(Duration.ofMillis(loadOfferExpirationMs))
+        );
 
         loadRepository.save(load);
         messagingService.archiveConversation(load.getId());
@@ -379,6 +409,84 @@ public class OfferService {
         auditLogService.log(user, AuditAction.OFFER_REJECTED, "OFFER", offer.getId(), "Offer declined");
 
         return toResponse(offerRepository.save(offer));
+    }
+
+    private boolean expireIfOfferDeadlinePassed(Load load) {
+        if (load.getStatus() != LoadStatus.POSTED ||
+                load.getOfferDeadlineAt() == null ||
+                load.getOfferDeadlineAt().isAfter(LocalDateTime.now())) {
+            return false;
+        }
+
+        load.setStatus(LoadStatus.EXPIRED);
+        load.setExpiredAt(LocalDateTime.now());
+        load.setConfirmationDeadlineAt(null);
+        loadRepository.save(load);
+        notificationService.createForCompany(
+                load.getBrokerCompany(),
+                NotificationType.LOAD_EXPIRED,
+                "Load expired",
+                "Your load expired without being booked",
+                "LOAD",
+                load.getId()
+        );
+        auditLogService.log(
+                null,
+                AuditAction.LOAD_EXPIRED,
+                "LOAD",
+                load.getId(),
+                "Load expired during workflow validation"
+        );
+        return true;
+    }
+
+    private boolean isConfirmationDeadlinePassed(Load load) {
+        return load.getStatus() == LoadStatus.AWAITING_FLEET_CONFIRMATION &&
+                load.getConfirmationDeadlineAt() != null &&
+                !load.getConfirmationDeadlineAt().isAfter(LocalDateTime.now());
+    }
+
+    private void releaseTimedOutConfirmation(Load load, Offer offer) {
+        if (offer.getStatus() == OfferStatus.SELECTED) {
+            offer.setStatus(OfferStatus.REJECTED);
+            offerRepository.save(offer);
+            notificationService.createForCompany(
+                    offer.getFleetUser().getCompany(),
+                    NotificationType.FLEET_CONFIRMATION_TIMEOUT,
+                    "Confirmation timed out",
+                    "Your selected offer was released because it was not confirmed in time.",
+                    "OFFER",
+                    offer.getId()
+            );
+            auditLogService.log(
+                    null,
+                    AuditAction.OFFER_REJECTED,
+                    "OFFER",
+                    offer.getId(),
+                    "Offer rejected during late confirmation attempt"
+            );
+        }
+
+        load.setStatus(LoadStatus.POSTED);
+        load.setConfirmationDeadlineAt(null);
+        load.setOfferDeadlineAt(LocalDateTime.now().plus(Duration.ofMillis(loadOfferExpirationMs)));
+        loadRepository.save(load);
+        messagingService.archiveConversation(load.getId());
+        notificationService.createForCompany(
+                load.getBrokerCompany(),
+                NotificationType.FLEET_CONFIRMATION_TIMEOUT,
+                "Fleet confirmation timed out",
+                "The selected fleet did not confirm in time. Your load is posted again.",
+                "LOAD",
+                load.getId()
+        );
+        auditLogService.log(
+                null,
+                AuditAction.FLEET_CONFIRMATION_TIMEOUT,
+                "LOAD",
+                load.getId(),
+                "Fleet confirmation timed out during late confirmation attempt"
+        );
     }
 
     private OfferResponse toResponse(Offer offer) {
