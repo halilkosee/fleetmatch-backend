@@ -17,6 +17,10 @@ public class ProductionReadinessValidator {
     private final String twilioAccountSid;
     private final String twilioAuthToken;
     private final String twilioFrom;
+    private final String pushProvider;
+    private final String fcmProjectId;
+    private final String fcmClientEmail;
+    private final String fcmPrivateKey;
     private final String rateLimitStore;
     private final String jwtSecret;
 
@@ -30,6 +34,10 @@ public class ProductionReadinessValidator {
             @Value("${fleetmatch.sms.twilio.account-sid:}") String twilioAccountSid,
             @Value("${fleetmatch.sms.twilio.auth-token:}") String twilioAuthToken,
             @Value("${fleetmatch.sms.twilio.from:}") String twilioFrom,
+            @Value("${fleetmatch.push.provider:log}") String pushProvider,
+            @Value("${fleetmatch.push.fcm.project-id:}") String fcmProjectId,
+            @Value("${fleetmatch.push.fcm.client-email:}") String fcmClientEmail,
+            @Value("${fleetmatch.push.fcm.private-key:}") String fcmPrivateKey,
             @Value("${fleetmatch.rate-limit.store:memory}") String rateLimitStore,
             @Value("${fleetmatch.jwt.secret:}") String jwtSecret
     ) {
@@ -42,6 +50,10 @@ public class ProductionReadinessValidator {
         this.twilioAccountSid = twilioAccountSid;
         this.twilioAuthToken = twilioAuthToken;
         this.twilioFrom = twilioFrom;
+        this.pushProvider = pushProvider;
+        this.fcmProjectId = fcmProjectId;
+        this.fcmClientEmail = fcmClientEmail;
+        this.fcmPrivateKey = fcmPrivateKey;
         this.rateLimitStore = rateLimitStore;
         this.jwtSecret = jwtSecret;
     }
@@ -68,6 +80,13 @@ public class ProductionReadinessValidator {
         if ("twilio".equalsIgnoreCase(smsProvider) &&
                 (isBlank(twilioAccountSid) || isBlank(twilioAuthToken) || isBlank(twilioFrom))) {
             throw new IllegalStateException("PROD Twilio credentials are required");
+        }
+        if ("log".equalsIgnoreCase(pushProvider)) {
+            throw new IllegalStateException("PROD requires a real push notification provider");
+        }
+        if ("fcm".equalsIgnoreCase(pushProvider) &&
+                (isBlank(fcmProjectId) || isBlank(fcmClientEmail) || isBlank(fcmPrivateKey))) {
+            throw new IllegalStateException("PROD FCM credentials are required");
         }
         if (!"redis".equalsIgnoreCase(rateLimitStore)) {
             throw new IllegalStateException("PROD requires Redis-backed rate limiting");

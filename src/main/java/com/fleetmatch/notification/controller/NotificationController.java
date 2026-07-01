@@ -1,12 +1,17 @@
 package com.fleetmatch.notification.controller;
 
 import com.fleetmatch.notification.dto.NotificationResponse;
+import com.fleetmatch.notification.dto.PushDeviceResponse;
+import com.fleetmatch.notification.dto.RegisterPushDeviceRequest;
 import com.fleetmatch.notification.dto.UnreadCountResponse;
+import com.fleetmatch.notification.dto.UnregisterPushDeviceRequest;
+import com.fleetmatch.notification.service.PushDeviceService;
 import com.fleetmatch.notification.service.NotificationService;
 import com.fleetmatch.security.user.CustomUserDetails;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +28,7 @@ import java.util.UUID;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final PushDeviceService pushDeviceService;
 
     @GetMapping
     @Operation(summary = "List notifications")
@@ -56,5 +62,23 @@ public class NotificationController {
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         notificationService.markAllRead(currentUser);
+    }
+
+    @PostMapping("/devices")
+    @Operation(summary = "Register push notification device")
+    public PushDeviceResponse registerPushDevice(
+            @Valid @RequestBody RegisterPushDeviceRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return pushDeviceService.registerDevice(request, currentUser);
+    }
+
+    @PostMapping("/devices/unregister")
+    @Operation(summary = "Unregister push notification device")
+    public void unregisterPushDevice(
+            @Valid @RequestBody UnregisterPushDeviceRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        pushDeviceService.unregisterDevice(request, currentUser);
     }
 }

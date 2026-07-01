@@ -55,3 +55,22 @@ The repository includes environment templates:
 - `.env.prod`
 
 Replace placeholder passwords and secrets on real servers. Do not commit real production secrets.
+
+## Push Notifications
+
+Mobile push notifications use Firebase Cloud Messaging when `PUSH_PROVIDER=fcm`.
+
+Required production values:
+
+```bash
+PUSH_PROVIDER=fcm
+FCM_PROJECT_ID=your-firebase-project-id
+FCM_CLIENT_EMAIL=your-service-account@your-project.iam.gserviceaccount.com
+FCM_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+Local and DEV can keep:
+
+```bash
+PUSH_PROVIDER=log
+```

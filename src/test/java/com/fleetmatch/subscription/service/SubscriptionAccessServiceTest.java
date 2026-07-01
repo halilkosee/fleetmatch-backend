@@ -8,6 +8,7 @@ import com.fleetmatch.subscription.repository.CompanySubscriptionRepository;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.lang.reflect.Proxy;
 import java.util.Optional;
 import java.util.UUID;
@@ -32,11 +33,64 @@ class SubscriptionAccessServiceTest {
     }
 
     @Test
+    void pastDueSubscriptionDoesNotUnlockMarketplaceFeatures() {
+        UUID companyId = UUID.randomUUID();
+        SubscriptionAccessService service =
+                new SubscriptionAccessService(repository(
+                        subscription(SubscriptionPaymentStatus.PAST_DUE)
+                ));
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> service.canViewContactInfo(companyId)
+        );
+    }
+
+    @Test
+    void futureSubscriptionDoesNotUnlockMarketplaceFeatures() {
+        UUID companyId = UUID.randomUUID();
+        CompanySubscription subscription = subscription(SubscriptionPaymentStatus.ACTIVE);
+        subscription.setStartDate(LocalDate.now().plusDays(1));
+        SubscriptionAccessService service =
+                new SubscriptionAccessService(repository(subscription));
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> service.canSubmitOffers(companyId)
+        );
+    }
+
+    @Test
+    void expiredSubscriptionDoesNotUnlockMarketplaceFeatures() {
+        UUID companyId = UUID.randomUUID();
+        CompanySubscription subscription = subscription(SubscriptionPaymentStatus.ACTIVE);
+        subscription.setEndDate(LocalDate.now().minusDays(1));
+        SubscriptionAccessService service =
+                new SubscriptionAccessService(repository(subscription));
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> service.canSubmitOffers(companyId)
+        );
+    }
+
+    @Test
     void activeSubscriptionUnlocksMarketplaceFeatures() {
         UUID companyId = UUID.randomUUID();
         SubscriptionAccessService service =
                 new SubscriptionAccessService(repository(
                         subscription(SubscriptionPaymentStatus.ACTIVE)
+                ));
+
+        assertDoesNotThrow(() -> service.canSubmitOffers(companyId));
+    }
+
+    @Test
+    void trialingSubscriptionUnlocksMarketplaceFeatures() {
+        UUID companyId = UUID.randomUUID();
+        SubscriptionAccessService service =
+                new SubscriptionAccessService(repository(
+                        subscription(SubscriptionPaymentStatus.TRIALING)
                 ));
 
         assertDoesNotThrow(() -> service.canSubmitOffers(companyId));

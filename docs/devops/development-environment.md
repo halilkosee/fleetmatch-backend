@@ -52,11 +52,12 @@ CORS_ALLOWED_ORIGINS=https://dev.easyfleetmatch.com,https://app-dev.easyfleetmat
 
 MAIL_PROVIDER=log
 SMS_PROVIDER=log
+PUSH_PROVIDER=log
 DOCUMENT_STORAGE_PROVIDER=local
 DOCUMENT_STORAGE_LOCAL_PATH=/app/data/company-documents
 ```
 
-For real email/SMS testing, replace `MAIL_PROVIDER=log` and `SMS_PROVIDER=log` with the configured SMTP/Twilio values.
+For real email/SMS/push testing, replace `MAIL_PROVIDER=log`, `SMS_PROVIDER=log`, and `PUSH_PROVIDER=log` with the configured SMTP/Twilio/FCM values.
 
 ## Start DEV
 

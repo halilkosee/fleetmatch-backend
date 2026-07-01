@@ -81,6 +81,12 @@ fleetmatch:
       account-sid: ${TWILIO_ACCOUNT_SID:}
       auth-token: ${TWILIO_AUTH_TOKEN:}
       from: ${TWILIO_FROM:}
+  push:
+    provider: ${PUSH_PROVIDER:log}
+    fcm:
+      project-id: ${FCM_PROJECT_ID:}
+      client-email: ${FCM_CLIENT_EMAIL:}
+      private-key: ${FCM_PRIVATE_KEY:}
   documents:
     storage:
       provider: ${DOCUMENT_STORAGE_PROVIDER:local}

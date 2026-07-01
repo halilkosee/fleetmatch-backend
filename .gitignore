@@ -4,12 +4,16 @@ target/
 # IntelliJ
 .idea/
 *.iml
+*.ipr
+*.iws
 
 # VS Code
 .vscode/
 
 # MacOS
 .DS_Store
+**/.DS_Store
+__MACOSX/
 
 # Logs
 logs/

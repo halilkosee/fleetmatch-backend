@@ -26,6 +26,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final PushNotificationDispatcher pushNotificationDispatcher;
 
     @Transactional
     public void createForCompany(
@@ -43,7 +44,8 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setRelatedEntityType(relatedEntityType);
         notification.setRelatedEntityId(relatedEntityId);
-        notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        pushNotificationDispatcher.dispatchToCompany(saved);
     }
 
     @Transactional
@@ -62,7 +64,8 @@ public class NotificationService {
         notification.setMessage(message);
         notification.setRelatedEntityType(relatedEntityType);
         notification.setRelatedEntityId(relatedEntityId);
-        notificationRepository.save(notification);
+        Notification saved = notificationRepository.save(notification);
+        pushNotificationDispatcher.dispatchToUser(saved, user);
     }
 
     public Page<NotificationResponse> getNotifications(

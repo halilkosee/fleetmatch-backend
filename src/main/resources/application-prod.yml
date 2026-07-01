@@ -9,6 +9,7 @@ spring:
     password: ${DB_PASSWORD}
 
   jpa:
+    open-in-view: false
     show-sql: false
     properties:
       hibernate:
@@ -20,6 +21,12 @@ fleetmatch:
     provider: ${MAIL_PROVIDER:smtp}
   sms:
     provider: ${SMS_PROVIDER:webhook}
+  push:
+    provider: ${PUSH_PROVIDER:fcm}
+    fcm:
+      project-id: ${FCM_PROJECT_ID:}
+      client-email: ${FCM_CLIENT_EMAIL:}
+      private-key: ${FCM_PRIVATE_KEY:}
   rate-limit:
     store: ${RATE_LIMIT_STORE:redis}
   jwt:
