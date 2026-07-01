@@ -116,6 +116,7 @@ public class LoadService {
         );
     }
 
+    @Transactional(readOnly = true)
     public Page<LoadResponse> searchLoadsPaged(
             String pickupState,
             String deliveryState,
@@ -206,6 +207,7 @@ public class LoadService {
         return toResponse(saved, user);
     }
 
+    @Transactional(readOnly = true)
     public Page<LoadResponse> getPostedLoads(
             Pageable pageable,
             CustomUserDetails currentUser
@@ -236,6 +238,7 @@ public class LoadService {
         ));
     }
 
+    @Transactional(readOnly = true)
     public LoadResponse getLoadById(
             UUID loadId,
             CustomUserDetails currentUser
@@ -255,6 +258,7 @@ public class LoadService {
         );
     }
 
+    @Transactional(readOnly = true)
     public List<LoadResponse> searchLoads(
             String pickupState,
             String deliveryState,

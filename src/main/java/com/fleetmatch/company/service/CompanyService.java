@@ -245,6 +245,7 @@ public class CompanyService {
         );
     }
 
+    @Transactional(readOnly = true)
     public List<PendingCompanyResponse> getPendingCompanies() {
 
         return companyRepository.findByVerificationStatusIn(List.of(
@@ -260,6 +261,7 @@ public class CompanyService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<CompanyResponse> getAllCompanies() {
 
         return companyRepository.findAll()
@@ -273,6 +275,7 @@ public class CompanyService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public CompanyResponse getCompany(UUID companyId) {
 
         Company company = companyRepository.findById(companyId)
@@ -286,6 +289,7 @@ public class CompanyService {
         );
     }
 
+    @Transactional(readOnly = true)
     public CompanyProfileResponse getProfile(
             CustomUserDetails currentUser
     ) {
@@ -327,6 +331,7 @@ public class CompanyService {
         );
     }
 
+    @Transactional
     public CompanyProfileResponse updateProfile(
             CustomUserDetails currentUser,
             UpdateCompanyProfileRequest request
@@ -417,6 +422,7 @@ public class CompanyService {
         );
     }
 
+    @Transactional(readOnly = true)
     public CompanyProfileResponse getMyCompany(CustomUserDetails currentUser) {
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

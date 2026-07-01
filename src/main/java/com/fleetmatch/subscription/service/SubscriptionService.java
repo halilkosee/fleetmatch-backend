@@ -21,6 +21,7 @@ import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -28,6 +29,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class SubscriptionService {
 
     private final SubscriptionPlanRepository subscriptionPlanRepository;
@@ -40,12 +42,14 @@ public class SubscriptionService {
     private final AuditLogService auditLogService;
     private final UserRepository userRepository;
 
+    @Transactional
     public SubscriptionPlanResponse createPlan(
             CreateSubscriptionPlanRequest request
     ) {
         return createPlan(request, null);
     }
 
+    @Transactional
     public SubscriptionPlanResponse createPlan(
             CreateSubscriptionPlanRequest request,
             CustomUserDetails currentUser
@@ -78,6 +82,7 @@ public class SubscriptionService {
         return mapToResponse(savedPlan);
     }
 
+    @Transactional
     public SubscriptionPlanResponse updatePlan(
             UUID planId,
             UpdateSubscriptionPlanRequest request
@@ -85,6 +90,7 @@ public class SubscriptionService {
         return updatePlan(planId, request, null);
     }
 
+    @Transactional
     public SubscriptionPlanResponse updatePlan(
             UUID planId,
             UpdateSubscriptionPlanRequest request,
@@ -178,12 +184,14 @@ public class SubscriptionService {
         );
     }
 
+    @Transactional
     public CompanySubscriptionResponse assignPlanToCompany(
             AssignSubscriptionRequest request
     ) {
         return assignPlanToCompany(request, null);
     }
 
+    @Transactional
     public CompanySubscriptionResponse assignPlanToCompany(
             AssignSubscriptionRequest request,
             CustomUserDetails currentUser
@@ -296,6 +304,7 @@ public class SubscriptionService {
         return mapSubscription(saved);
     }
 
+    @Transactional
     public CompanySubscriptionResponse selectPlanForApprovedCompany(
             UUID planId,
             CustomUserDetails currentUser
@@ -401,6 +410,7 @@ public class SubscriptionService {
         );
     }
 
+    @Transactional
     public void assignFreePlan(
             Company company
     ) {
@@ -434,6 +444,7 @@ public class SubscriptionService {
                 .save(subscription);
     }
 
+    @Transactional
     public CompanySubscriptionResponse updatePaymentStatus(
             UUID companyId,
             UpdateSubscriptionPaymentStatusRequest request,

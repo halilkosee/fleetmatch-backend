@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 @Table(name = "users")
 public class User extends BaseEntity {
 
+    @Version
+    private Long version;
+
     @Column(nullable = false)
     private String firstName;
 

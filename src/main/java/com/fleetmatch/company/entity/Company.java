@@ -11,6 +11,9 @@ import lombok.Setter;
 @Table(name = "companies")
 public class Company extends BaseEntity {
 
+    @Version
+    private Long version;
+
     // COMPANY INFO
 
     @Column(nullable = false)

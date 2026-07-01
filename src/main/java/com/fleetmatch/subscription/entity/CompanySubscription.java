@@ -15,11 +15,14 @@ import java.time.LocalDate;
 @Table(name = "company_subscriptions")
 public class CompanySubscription extends BaseEntity {
 
-    @ManyToOne(optional = false)
+    @Version
+    private Long version;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "company_id")
     private Company company;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "subscription_plan_id")
     private SubscriptionPlan subscriptionPlan;
 

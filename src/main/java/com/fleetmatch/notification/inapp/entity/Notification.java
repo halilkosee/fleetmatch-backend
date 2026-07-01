@@ -17,6 +17,9 @@ import java.util.UUID;
 @Table(name = "notifications")
 public class Notification extends BaseEntity {
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;

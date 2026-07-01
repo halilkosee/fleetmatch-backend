@@ -17,6 +17,9 @@ import java.time.LocalTime;
 @Table(name = "loads")
 public class Load extends BaseEntity {
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "broker_company_id", nullable = false)
     private Company brokerCompany;

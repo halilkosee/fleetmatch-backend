@@ -2,13 +2,16 @@ package com.fleetmatch.common.exception;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.time.LocalDateTime;
@@ -68,6 +71,25 @@ public class GlobalExceptionHandler {
                         HttpStatus.BAD_REQUEST,
                         "BAD_REQUEST",
                         ex.getMessage(),
+                        request.getRequestURI()
+                ));
+    }
+
+    @ExceptionHandler({
+            OptimisticLockException.class,
+            OptimisticLockingFailureException.class,
+            ObjectOptimisticLockingFailureException.class
+    })
+    public ResponseEntity<ApiError> handleOptimisticLock(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(error(
+                        HttpStatus.CONFLICT,
+                        "CONCURRENT_UPDATE",
+                        "This record was updated by another request. Please refresh and try again.",
                         request.getRequestURI()
                 ));
     }

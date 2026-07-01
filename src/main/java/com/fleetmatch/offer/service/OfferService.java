@@ -117,6 +117,7 @@ public class OfferService {
         return toResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public List<OfferResponse> getOffersForLoad(
             UUID loadId,
             CustomUserDetails currentUser

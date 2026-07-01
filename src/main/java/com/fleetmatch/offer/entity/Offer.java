@@ -15,6 +15,9 @@ import java.math.BigDecimal;
 @Table(name = "offers")
 public class Offer extends BaseEntity {
 
+    @Version
+    private Long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "load_id", nullable = false)
     private Load load;
