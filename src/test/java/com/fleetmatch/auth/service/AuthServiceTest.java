@@ -2,11 +2,13 @@ package com.fleetmatch.auth.service;
 
 import com.fleetmatch.auth.dto.AuthResponse;
 import com.fleetmatch.auth.dto.RegisterRequest;
+import com.fleetmatch.auth.dto.ResetPasswordRequest;
 import com.fleetmatch.auth.dto.VerifyEmailRequest;
 import com.fleetmatch.auth.dto.VerifyPhoneRequest;
 import com.fleetmatch.auth.entity.VerificationChannel;
 import com.fleetmatch.auth.entity.VerificationPurpose;
 import com.fleetmatch.audit.service.AuditLogService;
+import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.repository.CompanyRepository;
@@ -32,8 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,6 +81,7 @@ class AuthServiceTest {
 
         authService.register(request);
 
+        verify(passwordPolicyService).validate(request.getPassword(), request.getEmail());
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
         User saved = userCaptor.getValue();
@@ -100,6 +103,26 @@ class AuthServiceTest {
     }
 
     @Test
+    void weakRegistrationPasswordIsRejected() {
+        RegisterRequest request = registerRequest();
+        request.setPassword("weak");
+        doThrow(new BusinessRuleException("Password must be at least 12 characters"))
+                .when(passwordPolicyService)
+                .validate(request.getPassword(), request.getEmail());
+        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(userRepository.existsByPhone(request.getPhone())).thenReturn(false);
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> authService.register(request)
+        );
+
+        verify(companyRepository, never()).save(any());
+        verify(userRepository, never()).save(any());
+        verify(passwordEncoder, never()).encode(any());
+    }
+
+    @Test
     void loginReturnsTokenAndResetsFailedAttempts() {
         User user = user();
         user.setFailedLoginAttempts(2);
@@ -114,6 +137,26 @@ class AuthServiceTest {
         assertEquals("jwt-token", response.getToken());
         assertEquals(0, user.getFailedLoginAttempts());
         verify(userRepository).save(user);
+        verify(passwordPolicyService, never()).validate(any());
+        verify(passwordPolicyService, never()).validate(any(), any());
+    }
+
+    @Test
+    void existingUserCanStillLoginWithLegacyPassword() {
+        User user = user();
+        user.setPassword("legacy-hash");
+        when(userDetailsService.loadUserByUsername(user.getEmail()))
+                .thenReturn(new CustomUserDetails(user));
+        when(passwordEncoder.matches("old", user.getPassword()))
+                .thenReturn(true);
+        when(jwtService.generateToken(user)).thenReturn("jwt-token");
+
+        AuthResponse response = authService.login(user.getEmail(), "old");
+
+        assertEquals("jwt-token", response.getToken());
+        assertEquals("legacy-hash", user.getPassword());
+        verify(passwordPolicyService, never()).validate(any());
+        verify(passwordPolicyService, never()).validate(any(), any());
     }
 
     @Test
@@ -180,6 +223,43 @@ class AuthServiceTest {
                 "654321"
         );
         verify(userRepository).save(user);
+    }
+
+    @Test
+    void resetPasswordEnforcesPolicyBeforeHashing() {
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setEmail("ada@atlas.test");
+        request.setCode("123456");
+        request.setNewPassword("BetterPass!123");
+        User user = user();
+        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode(request.getNewPassword())).thenReturn("new-hash");
+
+        authService.resetPassword(request);
+
+        verify(passwordPolicyService).validate(request.getNewPassword(), request.getEmail());
+        assertEquals("new-hash", user.getPassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void weakPasswordResetDoesNotModifyExistingHash() {
+        ResetPasswordRequest request = new ResetPasswordRequest();
+        request.setEmail("ada@atlas.test");
+        request.setCode("123456");
+        request.setNewPassword("weak");
+        doThrow(new BusinessRuleException("Password must be at least 12 characters"))
+                .when(passwordPolicyService)
+                .validate(request.getNewPassword(), request.getEmail());
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> authService.resetPassword(request)
+        );
+
+        verify(userRepository, never()).findByEmail(any());
+        verify(passwordEncoder, never()).encode(any());
+        verify(userRepository, never()).save(any());
     }
 
     private RegisterRequest registerRequest() {

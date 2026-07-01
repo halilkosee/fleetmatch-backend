@@ -58,7 +58,7 @@ public class AccountService {
             throw new BadCredentialsException("Current password is incorrect");
         }
 
-        passwordPolicyService.validate(request.getNewPassword());
+        passwordPolicyService.validate(request.getNewPassword(), user.getEmail());
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setCredentialsChangedAt(LocalDateTime.now());
         user.setFailedLoginAttempts(0);

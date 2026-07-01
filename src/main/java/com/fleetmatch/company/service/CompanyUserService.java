@@ -63,7 +63,7 @@ public class CompanyUserService {
                 owner.getCompany()
         );
 
-        passwordPolicyService.validate(request.getPassword());
+        passwordPolicyService.validate(request.getPassword(), request.getEmail());
 
         User user = new User();
 

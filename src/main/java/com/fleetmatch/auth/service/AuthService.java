@@ -68,7 +68,7 @@ public class AuthService {
             );
         }
 
-        passwordPolicyService.validate(request.getPassword());
+        passwordPolicyService.validate(request.getPassword(), request.getEmail());
 
         Company company = new Company();
         company.setLegalName(request.getCompanyLegalName());
@@ -246,7 +246,7 @@ public class AuthService {
 
     @Transactional
     public void resetPassword(ResetPasswordRequest request) {
-        passwordPolicyService.validate(request.getNewPassword());
+        passwordPolicyService.validate(request.getNewPassword(), request.getEmail());
 
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessRuleException("Invalid or expired verification code"));
