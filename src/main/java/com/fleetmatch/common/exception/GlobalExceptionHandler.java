@@ -11,6 +11,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import com.fleetmatch.onboarding.dto.OnboardingValidationResponse;
+import com.fleetmatch.onboarding.exception.OnboardingValidationException;
 import jakarta.persistence.OptimisticLockException;
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -167,6 +169,15 @@ public class GlobalExceptionHandler {
                         ex.getMessage(),
                         request.getRequestURI()
                 ));
+    }
+
+    @ExceptionHandler(OnboardingValidationException.class)
+    public ResponseEntity<OnboardingValidationResponse> handleOnboardingValidation(
+            OnboardingValidationException ex
+    ) {
+        return ResponseEntity
+                .badRequest()
+                .body(ex.getValidation());
     }
 
     @ExceptionHandler(BadCredentialsException.class)

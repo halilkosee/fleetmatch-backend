@@ -1,7 +1,9 @@
 package com.fleetmatch.onboarding.controller;
 
 import com.fleetmatch.onboarding.dto.MarketSurveyRequest;
+import com.fleetmatch.onboarding.dto.OnboardingPreviewResponse;
 import com.fleetmatch.onboarding.dto.OnboardingProgressResponse;
+import com.fleetmatch.onboarding.dto.OnboardingValidationResponse;
 import com.fleetmatch.onboarding.service.OnboardingService;
 import com.fleetmatch.security.user.CustomUserDetails;
 import jakarta.validation.Valid;
@@ -25,6 +27,20 @@ public class OnboardingController {
             @AuthenticationPrincipal CustomUserDetails currentUser
     ) {
         return onboardingService.getProgress(currentUser);
+    }
+
+    @GetMapping("/validation")
+    public OnboardingValidationResponse validate(
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return onboardingService.validate(currentUser);
+    }
+
+    @GetMapping("/preview")
+    public OnboardingPreviewResponse preview(
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return onboardingService.preview(currentUser);
     }
 
     @PostMapping("/survey")

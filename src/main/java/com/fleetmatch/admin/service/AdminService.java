@@ -336,6 +336,21 @@ public class AdminService {
             company.setVerificationStatus(CompanyVerificationStatus.PENDING);
             company.setAdditionalDocumentsRequest(saved.getReviewNotes());
             companyRepository.save(company);
+            unlockCompanyUsersForResubmission(company);
+            notificationService.createForCompany(
+                    company,
+                    NotificationType.ADDITIONAL_DOCUMENTS_REQUESTED,
+                    "Document update requested",
+                    saved.getReviewNotes() == null || saved.getReviewNotes().isBlank()
+                            ? "EasyFleetMatch operations requested an updated verification document"
+                            : saved.getReviewNotes(),
+                    "COMPANY_DOCUMENT",
+                    saved.getId()
+            );
+            emailCompanyOwners(company, "additional_documents_requested", Map.of(
+                    "companyName", company.getLegalName(),
+                    "reason", saved.getReviewNotes() == null ? "" : saved.getReviewNotes()
+            ));
         }
 
         return new CompanyDocumentResponse(
@@ -371,6 +386,7 @@ public class AdminService {
         company.setVerificationNotes(request.getNotes());
         company.setManualPriority(request.getManualPriority());
         Company saved = companyRepository.save(company);
+        unlockCompanyUsersForResubmission(saved);
 
         notificationService.createForCompany(
                 saved,
@@ -562,6 +578,15 @@ public class AdminService {
     private User getActor(CustomUserDetails currentUser) {
         return userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Admin user not found"));
+    }
+
+    private void unlockCompanyUsersForResubmission(Company company) {
+        List<User> users = userRepository.findByCompanyId(company.getId());
+        users.stream()
+                .filter(user -> user.getStatus() == UserStatus.IN_REVIEW ||
+                        user.getStatus() == UserStatus.REJECTED)
+                .forEach(user -> user.setStatus(UserStatus.DOCUMENTS_PENDING));
+        userRepository.saveAll(users);
     }
 
     private long onboardingUserCount() {

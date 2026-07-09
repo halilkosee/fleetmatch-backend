@@ -19,6 +19,7 @@ import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
+import com.fleetmatch.vehicle.repository.VehicleRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
@@ -36,6 +37,8 @@ class OnboardingReviewLockTest {
         CompanyService service = new CompanyService(
                 companyRepository(fixture.company),
                 userRepository(fixture.user),
+                null,
+                null,
                 null,
                 null,
                 null,
@@ -77,7 +80,8 @@ class OnboardingReviewLockTest {
                 companyRepository(fixture.company),
                 companyDocumentRepository(),
                 marketSurveyRepository(),
-                null
+                null,
+                vehicleRepository()
         );
 
         assertThrows(
@@ -151,6 +155,16 @@ class OnboardingReviewLockTest {
         return (MarketSurveyRepository) Proxy.newProxyInstance(
                 MarketSurveyRepository.class.getClassLoader(),
                 new Class<?>[]{MarketSurveyRepository.class},
+                (proxy, method, args) -> {
+                    throw new UnsupportedOperationException(method.getName());
+                }
+        );
+    }
+
+    private VehicleRepository vehicleRepository() {
+        return (VehicleRepository) Proxy.newProxyInstance(
+                VehicleRepository.class.getClassLoader(),
+                new Class<?>[]{VehicleRepository.class},
                 (proxy, method, args) -> {
                     throw new UnsupportedOperationException(method.getName());
                 }

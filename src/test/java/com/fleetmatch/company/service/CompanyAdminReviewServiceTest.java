@@ -1,6 +1,9 @@
 package com.fleetmatch.company.service;
 
 import com.fleetmatch.audit.service.AuditLogService;
+import com.fleetmatch.company.documents.entity.DocumentReviewStatus;
+import com.fleetmatch.company.documents.entity.DocumentType;
+import com.fleetmatch.company.documents.repository.CompanyDocumentRepository;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
@@ -13,6 +16,7 @@ import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;
 import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
+import com.fleetmatch.vehicle.repository.VehicleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,7 +28,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +50,10 @@ class CompanyAdminReviewServiceTest {
     private EmailTemplateService emailTemplateService;
     @Mock
     private CompanyReviewEventService companyReviewEventService;
+    @Mock
+    private CompanyDocumentRepository companyDocumentRepository;
+    @Mock
+    private VehicleRepository vehicleRepository;
 
     @InjectMocks
     private CompanyService companyService;
@@ -53,6 +64,8 @@ class CompanyAdminReviewServiceTest {
         when(companyRepository.findById(fixture.company.getId())).thenReturn(Optional.of(fixture.company));
         when(userRepository.findByCompanyId(fixture.company.getId())).thenReturn(List.of(fixture.owner));
         when(userRepository.findById(fixture.admin.getId())).thenReturn(Optional.of(fixture.admin));
+        when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
+        mockApprovedFleetDocuments(fixture.company);
 
         companyService.verifyCompany(fixture.company.getId(), new CustomUserDetails(fixture.admin));
 
@@ -61,6 +74,28 @@ class CompanyAdminReviewServiceTest {
         verify(companyRepository).save(fixture.company);
         verify(userRepository).saveAll(List.of(fixture.owner));
         verify(companyReviewEventService).record(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void approveCompanyBlocksUntilRequiredDocumentsAreApproved() {
+        Fixture fixture = fixture();
+        when(companyRepository.findById(fixture.company.getId())).thenReturn(Optional.of(fixture.company));
+        when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
+        when(companyDocumentRepository.existsByCompanyIdAndDocumentTypeAndReviewStatus(
+                eq(fixture.company.getId()),
+                eq(DocumentType.DOT_REGISTRATION),
+                eq(DocumentReviewStatus.APPROVED)
+        )).thenReturn(false);
+
+        assertThrows(
+                com.fleetmatch.common.exception.BusinessRuleException.class,
+                () -> companyService.verifyCompany(
+                        fixture.company.getId(),
+                        new CustomUserDetails(fixture.admin)
+                )
+        );
+
+        verify(companyRepository, never()).save(fixture.company);
     }
 
     @Test
@@ -110,6 +145,8 @@ class CompanyAdminReviewServiceTest {
         company.setEmail("ops@review.test");
         company.setType(CompanyType.FLEET);
         company.setVerificationStatus(CompanyVerificationStatus.UNDER_REVIEW);
+        company.setCompanyInformationCompleted(true);
+        company.setMarketSurveyCompleted(true);
 
         User owner = new User();
         owner.setId(UUID.randomUUID());
@@ -133,5 +170,20 @@ class CompanyAdminReviewServiceTest {
     }
 
     private record Fixture(Company company, User owner, User admin) {
+    }
+
+    private void mockApprovedFleetDocuments(Company company) {
+        for (DocumentType documentType : List.of(
+                DocumentType.DOT_REGISTRATION,
+                DocumentType.MC_AUTHORITY,
+                DocumentType.CERTIFICATE_OF_INSURANCE,
+                DocumentType.BUSINESS_REGISTRATION
+        )) {
+            when(companyDocumentRepository.existsByCompanyIdAndDocumentTypeAndReviewStatus(
+                    eq(company.getId()),
+                    eq(documentType),
+                    eq(DocumentReviewStatus.APPROVED)
+            )).thenReturn(true);
+        }
     }
 }

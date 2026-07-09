@@ -4,6 +4,9 @@ import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.audit.entity.AuditAction;
 import com.fleetmatch.audit.service.AuditLogService;
+import com.fleetmatch.company.documents.entity.DocumentReviewStatus;
+import com.fleetmatch.company.documents.entity.DocumentType;
+import com.fleetmatch.company.documents.repository.CompanyDocumentRepository;
 import com.fleetmatch.company.dto.CompanyProfileResponse;
 import com.fleetmatch.company.dto.PendingCompanyResponse;
 import com.fleetmatch.company.dto.UpdateCompanyProfileRequest;
@@ -22,6 +25,7 @@ import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
 import com.fleetmatch.notification.event.NotificationType;
 import com.fleetmatch.notification.inapp.service.NotificationService;
+import com.fleetmatch.vehicle.repository.VehicleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -43,6 +47,8 @@ public class CompanyService {
     private final NotificationService notificationService;
     private final EmailTemplateService emailTemplateService;
     private final CompanyReviewEventService companyReviewEventService;
+    private final CompanyDocumentRepository companyDocumentRepository;
+    private final VehicleRepository vehicleRepository;
 
     public void verifyCompany(UUID companyId) {
         verifyCompany(companyId, null);
@@ -57,6 +63,8 @@ public class CompanyService {
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+
+        ensureReadyForApproval(company);
 
         company.setVerificationStatus(
                 CompanyVerificationStatus.APPROVED
@@ -516,6 +524,58 @@ public class CompanyService {
 
         return userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    private void ensureReadyForApproval(Company company) {
+        if (company.getVerificationStatus() != CompanyVerificationStatus.UNDER_REVIEW) {
+            throw new BusinessRuleException("Company must be in review before approval");
+        }
+
+        if (!company.isCompanyInformationCompleted()) {
+            throw new BusinessRuleException("Company information must be completed before approval");
+        }
+
+        if (!company.isMarketSurveyCompleted()) {
+            throw new BusinessRuleException("Market survey must be completed before approval");
+        }
+
+        if (company.getType() == CompanyType.FLEET &&
+                vehicleRepository.countByCompanyIdAndActiveTrue(company.getId()) == 0) {
+            throw new BusinessRuleException("Fleet vehicle information must be completed before approval");
+        }
+
+        List<DocumentType> missingApprovedDocuments = requiredDocuments(company.getType())
+                .stream()
+                .filter(documentType -> !companyDocumentRepository.existsByCompanyIdAndDocumentTypeAndReviewStatus(
+                        company.getId(),
+                        documentType,
+                        DocumentReviewStatus.APPROVED
+                ))
+                .toList();
+
+        if (!missingApprovedDocuments.isEmpty()) {
+            throw new BusinessRuleException(
+                    "All required documents must be approved before company approval: " +
+                            missingApprovedDocuments
+            );
+        }
+    }
+
+    private List<DocumentType> requiredDocuments(CompanyType type) {
+        if (type == CompanyType.BROKER) {
+            return List.of(
+                    DocumentType.BUSINESS_REGISTRATION,
+                    DocumentType.CERTIFICATE_OF_INSURANCE,
+                    DocumentType.MC_AUTHORITY
+            );
+        }
+
+        return List.of(
+                DocumentType.DOT_REGISTRATION,
+                DocumentType.MC_AUTHORITY,
+                DocumentType.CERTIFICATE_OF_INSURANCE,
+                DocumentType.BUSINESS_REGISTRATION
+        );
     }
 
     private String normalizeAuthorityNumber(String value) {

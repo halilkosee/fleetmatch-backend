@@ -6,6 +6,7 @@ import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.common.exception.ResourceNotFoundException;
 import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyType;
+import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.subscription.service.SubscriptionValidationService;
 import com.fleetmatch.user.entity.User;
@@ -39,8 +40,10 @@ public class VehicleService {
 
         Company company = requireFleetCompany(user);
 
-        subscriptionValidationService
-                .validateVehicleLimit(company);
+        if (company.getVerificationStatus() == CompanyVerificationStatus.APPROVED) {
+            subscriptionValidationService
+                    .validateVehicleLimit(company);
+        }
 
         if (vehicleRepository.existsByPlateNumber(
                 request.getPlateNumber()
