@@ -16,6 +16,7 @@ import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.company.review.entity.CompanyReviewAction;
+import com.fleetmatch.company.review.service.CompanyVerificationEngineService;
 import com.fleetmatch.company.review.service.CompanyReviewEventService;
 import com.fleetmatch.email.service.EmailTemplateService;
 import com.fleetmatch.security.user.CustomUserDetails;
@@ -52,6 +53,7 @@ public class CompanyService {
     private final CompanyDocumentRepository companyDocumentRepository;
     private final VehicleRepository vehicleRepository;
     private final MarketSurveyRepository marketSurveyRepository;
+    private final CompanyVerificationEngineService companyVerificationEngineService;
 
     public void verifyCompany(UUID companyId) {
         verifyCompany(companyId, null);
@@ -68,6 +70,7 @@ public class CompanyService {
                 .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
 
         ensureReadyForApproval(company);
+        companyVerificationEngineService.validateApprovalReadiness(company);
 
         company.setVerificationStatus(
                 CompanyVerificationStatus.APPROVED

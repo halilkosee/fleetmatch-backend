@@ -10,6 +10,7 @@ import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.onboarding.exception.OnboardingValidationException;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.company.review.service.CompanyReviewEventService;
+import com.fleetmatch.company.review.service.CompanyVerificationEngineService;
 import com.fleetmatch.onboarding.entity.MarketSurvey;
 import com.fleetmatch.onboarding.repository.MarketSurveyRepository;
 import com.fleetmatch.security.user.CustomUserDetails;
@@ -49,6 +50,8 @@ class OnboardingSubmitForReviewTest {
     private CompanyReviewEventService companyReviewEventService;
     @Mock
     private VehicleRepository vehicleRepository;
+    @Mock
+    private CompanyVerificationEngineService companyVerificationEngineService;
 
     @InjectMocks
     private OnboardingService onboardingService;
@@ -103,6 +106,7 @@ class OnboardingSubmitForReviewTest {
         assertEquals(CompanyVerificationStatus.UNDER_REVIEW, fixture.company.getVerificationStatus());
         verify(companyRepository).save(fixture.company);
         verify(userRepository).save(fixture.user);
+        verify(companyVerificationEngineService).createSnapshot(any(), any(), any());
         verify(companyReviewEventService).record(any(), any(), any(), any(), any(), any());
     }
 

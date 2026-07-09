@@ -20,6 +20,11 @@ import com.fleetmatch.company.entity.Company;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.review.entity.CompanyReviewAction;
 import com.fleetmatch.company.review.service.CompanyReviewEventService;
+import com.fleetmatch.company.review.dto.UpdateVerificationChecklistItemRequest;
+import com.fleetmatch.company.review.dto.UpdateVerificationSectionReviewRequest;
+import com.fleetmatch.company.review.dto.VerificationChecklistItemResponse;
+import com.fleetmatch.company.review.dto.VerificationSectionReviewResponse;
+import com.fleetmatch.company.review.service.CompanyVerificationEngineService;
 import com.fleetmatch.load.dto.LoadResponse;
 import com.fleetmatch.load.entity.Load;
 import com.fleetmatch.messaging.entity.Conversation;
@@ -80,6 +85,7 @@ public class AdminService {
     private final CompanyDocumentRepository companyDocumentRepository;
     private final MarketSurveyRepository marketSurveyRepository;
     private final CompanyReviewEventService companyReviewEventService;
+    private final CompanyVerificationEngineService companyVerificationEngineService;
     private final LoadService loadService;
     private final MessagingService messagingService;
     private final AuditLogService auditLogService;
@@ -295,7 +301,41 @@ public class AdminService {
                 company.getCreatedAt(),
                 documents,
                 companyReviewEventService.getEvents(company.getId()),
-                survey
+                survey,
+                companyVerificationEngineService.latestSnapshot(company.getId()),
+                companyVerificationEngineService.latestRisk(company.getId()),
+                companyVerificationEngineService.latestChecklist(company.getId()),
+                companyVerificationEngineService.latestSections(company.getId())
+        );
+    }
+
+    @Transactional
+    public VerificationChecklistItemResponse updateVerificationChecklistItem(
+            UUID companyId,
+            UpdateVerificationChecklistItemRequest request,
+            CustomUserDetails currentUser
+    ) {
+        companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+        return companyVerificationEngineService.updateChecklistItem(
+                companyId,
+                request,
+                getActor(currentUser)
+        );
+    }
+
+    @Transactional
+    public VerificationSectionReviewResponse updateVerificationSectionReview(
+            UUID companyId,
+            UpdateVerificationSectionReviewRequest request,
+            CustomUserDetails currentUser
+    ) {
+        companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+        return companyVerificationEngineService.updateSectionReview(
+                companyId,
+                request,
+                getActor(currentUser)
         );
     }
 
@@ -332,7 +372,9 @@ public class AdminService {
         );
 
         if (saved.getReviewStatus() == DocumentReviewStatus.REJECTED ||
-                saved.getReviewStatus() == DocumentReviewStatus.REQUESTED_AGAIN) {
+                saved.getReviewStatus() == DocumentReviewStatus.REQUESTED_AGAIN ||
+                saved.getReviewStatus() == DocumentReviewStatus.NEEDS_REPLACEMENT ||
+                saved.getReviewStatus() == DocumentReviewStatus.EXPIRED) {
             company.setVerificationStatus(CompanyVerificationStatus.PENDING);
             company.setAdditionalDocumentsRequest(saved.getReviewNotes());
             companyRepository.save(company);
@@ -443,6 +485,54 @@ public class AdminService {
                 null,
                 null,
                 request.getNotes()
+        );
+    }
+
+    @Transactional
+    public void escalateReview(
+            UUID companyId,
+            AdminReviewActionRequest request,
+            CustomUserDetails currentUser
+    ) {
+        recordOperationalReviewAction(
+                companyId,
+                request,
+                currentUser,
+                CompanyReviewAction.ESCALATED,
+                "Review escalated"
+        );
+    }
+
+    @Transactional
+    public void flagPossibleDuplicate(
+            UUID companyId,
+            AdminReviewActionRequest request,
+            CustomUserDetails currentUser
+    ) {
+        recordOperationalReviewAction(
+                companyId,
+                request,
+                currentUser,
+                CompanyReviewAction.POSSIBLE_DUPLICATE_FLAGGED,
+                "Possible duplicate flagged"
+        );
+    }
+
+    @Transactional
+    public void flagFraud(
+            UUID companyId,
+            AdminReviewActionRequest request,
+            CustomUserDetails currentUser
+    ) {
+        if (request != null && request.getManualPriority() == null) {
+            request.setManualPriority(100);
+        }
+        recordOperationalReviewAction(
+                companyId,
+                request,
+                currentUser,
+                CompanyReviewAction.FRAUD_FLAGGED,
+                "Possible fraud flagged"
         );
     }
 
@@ -578,6 +668,40 @@ public class AdminService {
     private User getActor(CustomUserDetails currentUser) {
         return userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Admin user not found"));
+    }
+
+    private void recordOperationalReviewAction(
+            UUID companyId,
+            AdminReviewActionRequest request,
+            CustomUserDetails currentUser,
+            CompanyReviewAction action,
+            String defaultNote
+    ) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Company not found"));
+        String note = request == null || request.getNotes() == null
+                ? defaultNote
+                : request.getNotes();
+        if (request != null && request.getManualPriority() != null) {
+            company.setManualPriority(request.getManualPriority());
+        }
+        company.setAdminInternalNotes(note);
+        Company saved = companyRepository.save(company);
+        companyReviewEventService.record(
+                saved,
+                getActor(currentUser),
+                action,
+                null,
+                request == null ? null : request.getReason(),
+                note
+        );
+        auditLogService.log(
+                getActor(currentUser),
+                AuditAction.COMPANY_INTERNAL_NOTE_ADDED,
+                "COMPANY",
+                saved.getId(),
+                defaultNote
+        );
     }
 
     private void unlockCompanyUsersForResubmission(Company company) {

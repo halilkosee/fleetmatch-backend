@@ -4,5 +4,7 @@ public enum DocumentReviewStatus {
     PENDING,
     APPROVED,
     REJECTED,
-    REQUESTED_AGAIN
+    REQUESTED_AGAIN,
+    NEEDS_REPLACEMENT,
+    EXPIRED
 }

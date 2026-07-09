@@ -12,6 +12,7 @@ import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.company.review.entity.CompanyReviewAction;
+import com.fleetmatch.company.review.service.CompanyVerificationEngineService;
 import com.fleetmatch.company.review.service.CompanyReviewEventService;
 import com.fleetmatch.onboarding.dto.MarketSurveyRequest;
 import com.fleetmatch.onboarding.dto.OnboardingDocumentRequirement;
@@ -49,6 +50,7 @@ public class OnboardingService {
     private final MarketSurveyRepository marketSurveyRepository;
     private final CompanyReviewEventService companyReviewEventService;
     private final VehicleRepository vehicleRepository;
+    private final CompanyVerificationEngineService companyVerificationEngineService;
 
     @Transactional(readOnly = true)
     public OnboardingProgressResponse getProgress(CustomUserDetails currentUser) {
@@ -189,6 +191,7 @@ public class OnboardingService {
             throw new OnboardingValidationException(validation);
         }
 
+        companyVerificationEngineService.createSnapshot(company, user, validation);
         company.setVerificationStatus(CompanyVerificationStatus.UNDER_REVIEW);
         user.setStatus(UserStatus.IN_REVIEW);
         companyRepository.save(company);

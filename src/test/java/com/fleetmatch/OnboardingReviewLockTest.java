@@ -43,6 +43,7 @@ class OnboardingReviewLockTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 
@@ -82,7 +83,8 @@ class OnboardingReviewLockTest {
                 companyDocumentRepository(),
                 marketSurveyRepository(),
                 null,
-                vehicleRepository()
+                vehicleRepository(),
+                null
         );
 
         assertThrows(

@@ -5,6 +5,10 @@ import com.fleetmatch.company.dto.CompanyProfileResponse;
 import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.review.dto.CompanyReviewEventResponse;
+import com.fleetmatch.company.review.dto.VerificationChecklistItemResponse;
+import com.fleetmatch.company.review.dto.VerificationRiskResponse;
+import com.fleetmatch.company.review.dto.VerificationSectionReviewResponse;
+import com.fleetmatch.company.review.dto.VerificationSnapshotResponse;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -28,6 +32,10 @@ public class AdminCompanyReviewResponse {
     private List<CompanyDocumentResponse> documents;
     private List<CompanyReviewEventResponse> reviewHistory;
     private Survey survey;
+    private VerificationSnapshotResponse latestSnapshot;
+    private VerificationRiskResponse riskAssessment;
+    private List<VerificationChecklistItemResponse> checklist;
+    private List<VerificationSectionReviewResponse> sectionReviews;
 
     @Getter
     @AllArgsConstructor

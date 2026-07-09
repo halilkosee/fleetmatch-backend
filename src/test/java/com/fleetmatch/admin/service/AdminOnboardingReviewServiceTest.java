@@ -12,6 +12,7 @@ import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.company.review.service.CompanyReviewEventService;
+import com.fleetmatch.company.review.service.CompanyVerificationEngineService;
 import com.fleetmatch.email.service.EmailTemplateService;
 import com.fleetmatch.load.repository.LoadRepository;
 import com.fleetmatch.load.service.LoadService;
@@ -62,6 +63,8 @@ class AdminOnboardingReviewServiceTest {
     private MarketSurveyRepository marketSurveyRepository;
     @Mock
     private CompanyReviewEventService companyReviewEventService;
+    @Mock
+    private CompanyVerificationEngineService companyVerificationEngineService;
     @Mock
     private LoadService loadService;
     @Mock

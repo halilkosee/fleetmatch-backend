@@ -9,6 +9,7 @@ import com.fleetmatch.company.entity.CompanyType;
 import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.company.review.service.CompanyReviewEventService;
+import com.fleetmatch.company.review.service.CompanyVerificationEngineService;
 import com.fleetmatch.email.service.EmailTemplateService;
 import com.fleetmatch.notification.inapp.service.NotificationService;
 import com.fleetmatch.onboarding.entity.MarketSurvey;
@@ -58,6 +59,8 @@ class CompanyAdminReviewServiceTest {
     private VehicleRepository vehicleRepository;
     @Mock
     private MarketSurveyRepository marketSurveyRepository;
+    @Mock
+    private CompanyVerificationEngineService companyVerificationEngineService;
 
     @InjectMocks
     private CompanyService companyService;

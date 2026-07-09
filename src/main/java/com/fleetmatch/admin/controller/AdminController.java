@@ -16,6 +16,10 @@ import com.fleetmatch.audit.service.AuditLogService;
 import com.fleetmatch.company.documents.dto.CompanyDocumentResponse;
 import com.fleetmatch.company.documents.dto.ReviewCompanyDocumentRequest;
 import com.fleetmatch.company.documents.service.CompanyDocumentService;
+import com.fleetmatch.company.review.dto.UpdateVerificationChecklistItemRequest;
+import com.fleetmatch.company.review.dto.UpdateVerificationSectionReviewRequest;
+import com.fleetmatch.company.review.dto.VerificationChecklistItemResponse;
+import com.fleetmatch.company.review.dto.VerificationSectionReviewResponse;
 import com.fleetmatch.company.dto.CompanyResponse;
 import com.fleetmatch.company.dto.PendingCompanyResponse;
 import com.fleetmatch.company.entity.CompanyType;
@@ -109,6 +113,24 @@ public class AdminController {
         return adminService.getCompanyReview(companyId);
     }
 
+    @PatchMapping("/companies/{companyId}/review/checklist")
+    public VerificationChecklistItemResponse updateVerificationChecklistItem(
+            @PathVariable UUID companyId,
+            @Valid @RequestBody UpdateVerificationChecklistItemRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return adminService.updateVerificationChecklistItem(companyId, request, currentUser);
+    }
+
+    @PatchMapping("/companies/{companyId}/review/section")
+    public VerificationSectionReviewResponse updateVerificationSectionReview(
+            @PathVariable UUID companyId,
+            @Valid @RequestBody UpdateVerificationSectionReviewRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        return adminService.updateVerificationSectionReview(companyId, request, currentUser);
+    }
+
     @PatchMapping("/companies/{companyId}/request-documents")
     public String requestAdditionalDocuments(
             @PathVariable UUID companyId,
@@ -142,6 +164,36 @@ public class AdminController {
     ) {
         adminService.addInternalNote(companyId, request, currentUser);
         return "Internal note updated";
+    }
+
+    @PatchMapping("/companies/{companyId}/review/escalate")
+    public String escalateReview(
+            @PathVariable UUID companyId,
+            @Valid @RequestBody(required = false) AdminReviewActionRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        adminService.escalateReview(companyId, request, currentUser);
+        return "Review escalated";
+    }
+
+    @PatchMapping("/companies/{companyId}/review/flag-duplicate")
+    public String flagPossibleDuplicate(
+            @PathVariable UUID companyId,
+            @Valid @RequestBody(required = false) AdminReviewActionRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        adminService.flagPossibleDuplicate(companyId, request, currentUser);
+        return "Possible duplicate flagged";
+    }
+
+    @PatchMapping("/companies/{companyId}/review/flag-fraud")
+    public String flagFraud(
+            @PathVariable UUID companyId,
+            @Valid @RequestBody(required = false) AdminReviewActionRequest request,
+            @AuthenticationPrincipal CustomUserDetails currentUser
+    ) {
+        adminService.flagFraud(companyId, request, currentUser);
+        return "Possible fraud flagged";
     }
 
     @GetMapping("/loads")
