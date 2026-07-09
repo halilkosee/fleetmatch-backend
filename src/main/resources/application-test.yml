@@ -1,0 +1,9 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+
+fleetmatch:
+  environment: TEST
+  verification:
+    fixed-code: ${VERIFICATION_FIXED_CODE:123456}

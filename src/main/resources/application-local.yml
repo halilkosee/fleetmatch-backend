@@ -23,3 +23,5 @@ fleetmatch:
     base-url: ${API_BASE_URL:http://localhost:8080}
   frontend:
     base-url: ${FRONTEND_BASE_URL:http://localhost:5173}
+  verification:
+    fixed-code: ${VERIFICATION_FIXED_CODE:123456}

@@ -36,6 +36,9 @@ public class VerificationCodeService {
     @Value("${fleetmatch.environment:LOCAL}")
     private String environment;
 
+    @Value("${fleetmatch.verification.fixed-code:}")
+    private String fixedCode;
+
     @Transactional
     public VerificationCodeResponse createCode(
             User user,
@@ -50,7 +53,7 @@ public class VerificationCodeService {
                 targetValue
         );
 
-        String code = String.format("%06d", RANDOM.nextInt(1_000_000));
+        String code = generateCode();
 
         UserVerificationCode verificationCode = new UserVerificationCode();
         verificationCode.setUser(user);
@@ -150,5 +153,12 @@ public class VerificationCodeService {
     private boolean shouldExposeDebugCode() {
         return !"PROD".equalsIgnoreCase(environment) &&
                 !"prod".equalsIgnoreCase(environment);
+    }
+
+    private String generateCode() {
+        if (shouldExposeDebugCode() && fixedCode != null && !fixedCode.isBlank()) {
+            return fixedCode;
+        }
+        return String.format("%06d", RANDOM.nextInt(1_000_000));
     }
 }

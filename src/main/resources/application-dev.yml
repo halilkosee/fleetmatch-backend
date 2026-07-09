@@ -24,3 +24,5 @@ fleetmatch:
     base-url: ${API_BASE_URL:https://api-dev.easyfleetmatch.com}
   frontend:
     base-url: ${FRONTEND_BASE_URL:https://dev.easyfleetmatch.com}
+  verification:
+    fixed-code: ${VERIFICATION_FIXED_CODE:123456}
