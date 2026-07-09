@@ -1,5 +1,6 @@
 package com.fleetmatch.onboarding.service;
 
+import com.fleetmatch.common.exception.BusinessRuleException;
 import com.fleetmatch.company.documents.entity.CompanyDocument;
 import com.fleetmatch.company.documents.entity.DocumentType;
 import com.fleetmatch.company.documents.repository.CompanyDocumentRepository;
@@ -9,6 +10,7 @@ import com.fleetmatch.company.entity.CompanyVerificationStatus;
 import com.fleetmatch.onboarding.exception.OnboardingValidationException;
 import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.company.review.service.CompanyReviewEventService;
+import com.fleetmatch.onboarding.entity.MarketSurvey;
 import com.fleetmatch.onboarding.repository.MarketSurveyRepository;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.user.entity.User;
@@ -57,6 +59,7 @@ class OnboardingSubmitForReviewTest {
         fixture.user.setEmailVerified(false);
         when(userRepository.findById(fixture.user.getId())).thenReturn(Optional.of(fixture.user));
         when(companyDocumentRepository.findByCompanyId(fixture.company.getId())).thenReturn(requiredFleetDocuments(fixture.company));
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId())).thenReturn(Optional.of(fleetSurvey(fixture.company)));
         when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
 
         assertThrows(
@@ -73,6 +76,7 @@ class OnboardingSubmitForReviewTest {
         Fixture fixture = fixture();
         when(userRepository.findById(fixture.user.getId())).thenReturn(Optional.of(fixture.user));
         when(companyDocumentRepository.findByCompanyId(fixture.company.getId())).thenReturn(List.of());
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId())).thenReturn(Optional.of(fleetSurvey(fixture.company)));
         when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
 
         OnboardingValidationException exception = assertThrows(
@@ -90,6 +94,7 @@ class OnboardingSubmitForReviewTest {
         Fixture fixture = fixture();
         when(userRepository.findById(fixture.user.getId())).thenReturn(Optional.of(fixture.user));
         when(companyDocumentRepository.findByCompanyId(fixture.company.getId())).thenReturn(requiredFleetDocuments(fixture.company));
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId())).thenReturn(Optional.of(fleetSurvey(fixture.company)));
         when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
 
         onboardingService.submitForReview(new CustomUserDetails(fixture.user));
@@ -108,6 +113,7 @@ class OnboardingSubmitForReviewTest {
         fixture.company.setVerificationStatus(CompanyVerificationStatus.UNDER_REVIEW);
         when(userRepository.findById(fixture.user.getId())).thenReturn(Optional.of(fixture.user));
         when(companyDocumentRepository.findByCompanyId(fixture.company.getId())).thenReturn(requiredFleetDocuments(fixture.company));
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId())).thenReturn(Optional.of(fleetSurvey(fixture.company)));
         when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
 
         onboardingService.submitForReview(new CustomUserDetails(fixture.user));
@@ -122,6 +128,7 @@ class OnboardingSubmitForReviewTest {
         Fixture fixture = brokerFixture();
         when(userRepository.findById(fixture.user.getId())).thenReturn(Optional.of(fixture.user));
         when(companyDocumentRepository.findByCompanyId(fixture.company.getId())).thenReturn(requiredBrokerDocuments(fixture.company));
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId())).thenReturn(Optional.of(brokerSurvey(fixture.company)));
 
         var validation = onboardingService.validate(new CustomUserDetails(fixture.user));
 
@@ -136,6 +143,7 @@ class OnboardingSubmitForReviewTest {
         Fixture fixture = fixture();
         when(userRepository.findById(fixture.user.getId())).thenReturn(Optional.of(fixture.user));
         when(companyDocumentRepository.findByCompanyId(fixture.company.getId())).thenReturn(requiredFleetDocuments(fixture.company));
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId())).thenReturn(Optional.of(fleetSurvey(fixture.company)));
         when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(0L);
 
         var validation = onboardingService.validate(new CustomUserDetails(fixture.user));
@@ -159,12 +167,47 @@ class OnboardingSubmitForReviewTest {
                 rejectedInsurance,
                 document(fixture.company, DocumentType.BUSINESS_REGISTRATION)
         ));
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId())).thenReturn(Optional.of(fleetSurvey(fixture.company)));
         when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
 
         var validation = onboardingService.validate(new CustomUserDetails(fixture.user));
 
         assertEquals(false, validation.isSubmissionReady());
         assertEquals(true, validation.getMissingDocuments().contains(DocumentType.CERTIFICATE_OF_INSURANCE));
+    }
+
+    @Test
+    void emptySurveyCannotBeMarkedCompleted() {
+        Fixture fixture = fixture();
+        fixture.company.setMarketSurveyCompleted(false);
+        when(userRepository.findById(fixture.user.getId())).thenReturn(Optional.of(fixture.user));
+
+        assertThrows(
+                BusinessRuleException.class,
+                () -> onboardingService.submitSurvey(
+                        new com.fleetmatch.onboarding.dto.MarketSurveyRequest(),
+                        new CustomUserDetails(fixture.user)
+                )
+        );
+
+        verify(marketSurveyRepository, never()).save(any());
+        verify(companyRepository, never()).save(any());
+    }
+
+    @Test
+    void validationReportsMissingSurveyFieldsEvenWhenCompletionFlagIsWrong() {
+        Fixture fixture = fixture();
+        fixture.company.setMarketSurveyCompleted(true);
+        when(userRepository.findById(fixture.user.getId())).thenReturn(Optional.of(fixture.user));
+        when(companyDocumentRepository.findByCompanyId(fixture.company.getId())).thenReturn(requiredFleetDocuments(fixture.company));
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId())).thenReturn(Optional.empty());
+        when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
+
+        var validation = onboardingService.validate(new CustomUserDetails(fixture.user));
+
+        assertEquals(false, validation.isSubmissionReady());
+        assertEquals(true, validation.getMissingFields().contains("survey.operatingStates"));
+        assertEquals(true, validation.getMissingFields().contains("survey.fleetSize"));
     }
 
     private Fixture fixture() {
@@ -267,5 +310,32 @@ class OnboardingSubmitForReviewTest {
         document.setFileName(type.name() + ".pdf");
         document.setFileUrl("https://docs.test/" + type.name());
         return document;
+    }
+
+    private MarketSurvey fleetSurvey(Company company) {
+        MarketSurvey survey = new MarketSurvey();
+        survey.setCompany(company);
+        survey.setCompanyType(CompanyType.FLEET);
+        survey.setOperatingStates(List.of("TX", "OK"));
+        survey.setEquipmentTypes(List.of("BOX_TRUCK"));
+        survey.setAverageLoadsPerWeek(12);
+        survey.setFleetSize(5);
+        survey.setCurrentLoadBoard("DAT");
+        survey.setBiggestOperationalChallenges("Dispatch efficiency");
+        return survey;
+    }
+
+    private MarketSurvey brokerSurvey(Company company) {
+        MarketSurvey survey = new MarketSurvey();
+        survey.setCompany(company);
+        survey.setCompanyType(CompanyType.BROKER);
+        survey.setOperatingStates(List.of("IL", "IN"));
+        survey.setEquipmentTypes(List.of("DRY_VAN"));
+        survey.setAverageLoadsPerWeek(40);
+        survey.setCurrentLoadBoard("Truckstop");
+        survey.setCurrentTms("AscendTMS");
+        survey.setFutureIntegrationInterest(true);
+        survey.setBiggestOperationalChallenges("Carrier coverage");
+        return survey;
     }
 }

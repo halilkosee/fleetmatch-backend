@@ -1,6 +1,7 @@
 package com.fleetmatch.company.dto;
 
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -21,6 +22,7 @@ public class UpdateCompanySettingsRequest {
     @Size(max = 50)
     private String companyPhone;
 
+    @Min(1)
     private Integer fleetSize;
 
     @Size(max = 1000)

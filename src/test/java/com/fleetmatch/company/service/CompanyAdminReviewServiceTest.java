@@ -11,6 +11,8 @@ import com.fleetmatch.company.repository.CompanyRepository;
 import com.fleetmatch.company.review.service.CompanyReviewEventService;
 import com.fleetmatch.email.service.EmailTemplateService;
 import com.fleetmatch.notification.inapp.service.NotificationService;
+import com.fleetmatch.onboarding.entity.MarketSurvey;
+import com.fleetmatch.onboarding.repository.MarketSurveyRepository;
 import com.fleetmatch.security.user.CustomUserDetails;
 import com.fleetmatch.user.entity.PlatformRole;
 import com.fleetmatch.user.entity.User;
@@ -54,6 +56,8 @@ class CompanyAdminReviewServiceTest {
     private CompanyDocumentRepository companyDocumentRepository;
     @Mock
     private VehicleRepository vehicleRepository;
+    @Mock
+    private MarketSurveyRepository marketSurveyRepository;
 
     @InjectMocks
     private CompanyService companyService;
@@ -65,6 +69,8 @@ class CompanyAdminReviewServiceTest {
         when(userRepository.findByCompanyId(fixture.company.getId())).thenReturn(List.of(fixture.owner));
         when(userRepository.findById(fixture.admin.getId())).thenReturn(Optional.of(fixture.admin));
         when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId()))
+                .thenReturn(Optional.of(fleetSurvey(fixture.company)));
         mockApprovedFleetDocuments(fixture.company);
 
         companyService.verifyCompany(fixture.company.getId(), new CustomUserDetails(fixture.admin));
@@ -80,6 +86,8 @@ class CompanyAdminReviewServiceTest {
     void approveCompanyBlocksUntilRequiredDocumentsAreApproved() {
         Fixture fixture = fixture();
         when(companyRepository.findById(fixture.company.getId())).thenReturn(Optional.of(fixture.company));
+        when(marketSurveyRepository.findByCompanyId(fixture.company.getId()))
+                .thenReturn(Optional.of(fleetSurvey(fixture.company)));
         when(vehicleRepository.countByCompanyIdAndActiveTrue(fixture.company.getId())).thenReturn(1L);
         when(companyDocumentRepository.existsByCompanyIdAndDocumentTypeAndReviewStatus(
                 eq(fixture.company.getId()),
@@ -185,5 +193,18 @@ class CompanyAdminReviewServiceTest {
                     eq(DocumentReviewStatus.APPROVED)
             )).thenReturn(true);
         }
+    }
+
+    private MarketSurvey fleetSurvey(Company company) {
+        MarketSurvey survey = new MarketSurvey();
+        survey.setCompany(company);
+        survey.setCompanyType(CompanyType.FLEET);
+        survey.setOperatingStates(List.of("TX", "OK"));
+        survey.setEquipmentTypes(List.of("BOX_TRUCK"));
+        survey.setAverageLoadsPerWeek(12);
+        survey.setFleetSize(5);
+        survey.setCurrentLoadBoard("DAT");
+        survey.setBiggestOperationalChallenges("Dispatch efficiency");
+        return survey;
     }
 }

@@ -42,6 +42,7 @@ class OnboardingReviewLockTest {
                 null,
                 null,
                 null,
+                null,
                 null
         );
 

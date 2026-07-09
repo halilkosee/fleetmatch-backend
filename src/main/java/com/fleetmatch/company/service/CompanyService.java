@@ -25,6 +25,8 @@ import com.fleetmatch.user.entity.UserStatus;
 import com.fleetmatch.user.repository.UserRepository;
 import com.fleetmatch.notification.event.NotificationType;
 import com.fleetmatch.notification.inapp.service.NotificationService;
+import com.fleetmatch.onboarding.entity.MarketSurvey;
+import com.fleetmatch.onboarding.repository.MarketSurveyRepository;
 import com.fleetmatch.vehicle.repository.VehicleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -49,6 +51,7 @@ public class CompanyService {
     private final CompanyReviewEventService companyReviewEventService;
     private final CompanyDocumentRepository companyDocumentRepository;
     private final VehicleRepository vehicleRepository;
+    private final MarketSurveyRepository marketSurveyRepository;
 
     public void verifyCompany(UUID companyId) {
         verifyCompany(companyId, null);
@@ -538,6 +541,14 @@ public class CompanyService {
         if (!company.isMarketSurveyCompleted()) {
             throw new BusinessRuleException("Market survey must be completed before approval");
         }
+        MarketSurvey survey = marketSurveyRepository.findByCompanyId(company.getId())
+                .orElseThrow(() -> new BusinessRuleException("Market survey must be completed before approval"));
+        List<String> missingSurveyFields = missingSurveyFields(survey, company.getType());
+        if (!missingSurveyFields.isEmpty()) {
+            throw new BusinessRuleException(
+                    "Market survey is incomplete before approval: " + missingSurveyFields
+            );
+        }
 
         if (company.getType() == CompanyType.FLEET &&
                 vehicleRepository.countByCompanyIdAndActiveTrue(company.getId()) == 0) {
@@ -576,6 +587,47 @@ public class CompanyService {
                 DocumentType.CERTIFICATE_OF_INSURANCE,
                 DocumentType.BUSINESS_REGISTRATION
         );
+    }
+
+    private List<String> missingSurveyFields(MarketSurvey survey, CompanyType type) {
+        List<String> missing = new java.util.ArrayList<>();
+        requireList(missing, "survey.operatingStates", survey.getOperatingStates());
+        requireList(missing, "survey.equipmentTypes", survey.getEquipmentTypes());
+        requirePositiveInteger(missing, "survey.averageLoadsPerWeek", survey.getAverageLoadsPerWeek());
+        requireText(missing, "survey.biggestOperationalChallenges", survey.getBiggestOperationalChallenges());
+
+        if (type == CompanyType.FLEET) {
+            requirePositiveInteger(missing, "survey.fleetSize", survey.getFleetSize());
+            requireText(missing, "survey.currentLoadBoard", survey.getCurrentLoadBoard());
+        }
+
+        if (type == CompanyType.BROKER) {
+            requireText(missing, "survey.currentLoadBoard", survey.getCurrentLoadBoard());
+            requireText(missing, "survey.currentTms", survey.getCurrentTms());
+            if (survey.getFutureIntegrationInterest() == null) {
+                missing.add("survey.futureIntegrationInterest");
+            }
+        }
+
+        return missing;
+    }
+
+    private void requireList(List<String> missing, String key, List<String> value) {
+        if (value == null || value.isEmpty()) {
+            missing.add(key);
+        }
+    }
+
+    private void requirePositiveInteger(List<String> missing, String key, Integer value) {
+        if (value == null || value <= 0) {
+            missing.add(key);
+        }
+    }
+
+    private void requireText(List<String> missing, String key, String value) {
+        if (isBlank(value)) {
+            missing.add(key);
+        }
     }
 
     private String normalizeAuthorityNumber(String value) {

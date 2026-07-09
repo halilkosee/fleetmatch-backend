@@ -145,6 +145,7 @@ public class OnboardingService {
         Company company = requireCompany(user);
 
         ensureOnboardingEditable(user, company);
+        validateSurveyRequest(request, company.getType());
 
         MarketSurvey survey = marketSurveyRepository.findByCompanyId(company.getId())
                 .orElseGet(MarketSurvey::new);
@@ -266,6 +267,16 @@ public class OnboardingService {
         List<String> missingFields = missingFields(user, company);
         List<DocumentType> missingDocuments = missingDocuments(company, requiredDocuments);
         List<String> invalidFields = invalidFields(company);
+        marketSurveyRepository.findByCompanyId(company.getId())
+                .ifPresentOrElse(
+                        survey -> {
+                            missingFields.addAll(missingSurveyFields(survey, company.getType()));
+                            invalidFields.addAll(invalidSurveyFields(survey));
+                        },
+                        () -> {
+                            missingFields.addAll(surveyRequirementKeys(company.getType()));
+                        }
+                );
         List<String> warnings = warnings(company);
         List<String> blockingErrors = blockingErrors(
                 user,
@@ -513,9 +524,9 @@ public class OnboardingService {
                 section(
                         "survey",
                         "Market Survey",
-                        List.of("marketSurvey"),
+                        surveyRequirementKeys(company.getType()),
                         missingFields,
-                        List.of(),
+                        invalidFields,
                         List.of()
                 ),
                 section(
@@ -565,6 +576,92 @@ public class OnboardingService {
         return missingDocuments(company, requiredDocuments(company.getType())).isEmpty();
     }
 
+    private void validateSurveyRequest(MarketSurveyRequest request, CompanyType companyType) {
+        List<String> missing = missingSurveyFields(request, companyType);
+        List<String> invalid = invalidSurveyFields(request);
+        if (!missing.isEmpty() || !invalid.isEmpty()) {
+            throw new BusinessRuleException(
+                    "Market survey is incomplete. Missing: " + missing + "; Invalid: " + invalid
+            );
+        }
+    }
+
+    private List<String> missingSurveyFields(MarketSurveyRequest request, CompanyType companyType) {
+        List<String> missing = new ArrayList<>();
+        requireList(missing, "survey.operatingStates", request.getOperatingStates());
+        requireList(missing, "survey.equipmentTypes", request.getEquipmentTypes());
+        requirePositiveInteger(missing, "survey.averageLoadsPerWeek", request.getAverageLoadsPerWeek());
+        requireText(missing, "survey.biggestOperationalChallenges", request.getBiggestOperationalChallenges());
+
+        if (companyType == CompanyType.FLEET) {
+            requirePositiveInteger(missing, "survey.fleetSize", request.getFleetSize());
+            requireText(missing, "survey.currentLoadBoard", request.getCurrentLoadBoard());
+        }
+
+        if (companyType == CompanyType.BROKER) {
+            requireText(missing, "survey.currentLoadBoard", request.getCurrentLoadBoard());
+            requireText(missing, "survey.currentTms", request.getCurrentTms());
+            if (request.getFutureIntegrationInterest() == null) {
+                missing.add("survey.futureIntegrationInterest");
+            }
+        }
+
+        return missing;
+    }
+
+    private List<String> missingSurveyFields(MarketSurvey survey, CompanyType companyType) {
+        MarketSurveyRequest request = new MarketSurveyRequest();
+        request.setOperatingStates(survey.getOperatingStates());
+        request.setEquipmentTypes(survey.getEquipmentTypes());
+        request.setAverageLoadsPerWeek(survey.getAverageLoadsPerWeek());
+        request.setFleetSize(survey.getFleetSize());
+        request.setCurrentLoadBoard(survey.getCurrentLoadBoard());
+        request.setCurrentTms(survey.getCurrentTms());
+        request.setFutureIntegrationInterest(survey.getFutureIntegrationInterest());
+        request.setBiggestOperationalChallenges(survey.getBiggestOperationalChallenges());
+        return missingSurveyFields(request, companyType);
+    }
+
+    private List<String> invalidSurveyFields(MarketSurveyRequest request) {
+        List<String> invalid = new ArrayList<>();
+        if (request.getAverageLoadsPerWeek() != null && request.getAverageLoadsPerWeek() <= 0) {
+            invalid.add("survey.averageLoadsPerWeek");
+        }
+        if (request.getFleetSize() != null && request.getFleetSize() <= 0) {
+            invalid.add("survey.fleetSize");
+        }
+        return invalid;
+    }
+
+    private List<String> invalidSurveyFields(MarketSurvey survey) {
+        MarketSurveyRequest request = new MarketSurveyRequest();
+        request.setAverageLoadsPerWeek(survey.getAverageLoadsPerWeek());
+        request.setFleetSize(survey.getFleetSize());
+        return invalidSurveyFields(request);
+    }
+
+    private List<String> surveyRequirementKeys(CompanyType companyType) {
+        List<String> keys = new ArrayList<>(List.of(
+                "survey.operatingStates",
+                "survey.equipmentTypes",
+                "survey.averageLoadsPerWeek",
+                "survey.biggestOperationalChallenges"
+        ));
+
+        if (companyType == CompanyType.FLEET) {
+            keys.add("survey.fleetSize");
+            keys.add("survey.currentLoadBoard");
+        }
+
+        if (companyType == CompanyType.BROKER) {
+            keys.add("survey.currentLoadBoard");
+            keys.add("survey.currentTms");
+            keys.add("survey.futureIntegrationInterest");
+        }
+
+        return keys;
+    }
+
     private boolean isUsableForSubmission(CompanyDocument document) {
         return document.getReviewStatus() == DocumentReviewStatus.PENDING ||
                 document.getReviewStatus() == DocumentReviewStatus.APPROVED;
@@ -580,6 +677,18 @@ public class OnboardingService {
 
     private void requireText(List<String> missing, String key, String value) {
         if (isBlank(value)) {
+            missing.add(key);
+        }
+    }
+
+    private void requireList(List<String> missing, String key, List<String> value) {
+        if (value == null || value.isEmpty()) {
+            missing.add(key);
+        }
+    }
+
+    private void requirePositiveInteger(List<String> missing, String key, Integer value) {
+        if (value == null || value <= 0) {
             missing.add(key);
         }
     }
